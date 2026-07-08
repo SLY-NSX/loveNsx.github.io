@@ -810,18 +810,55 @@ if (customIntros && customIntros.length > 0) {
 
 function manageAutoSendTimer() {
     if (autoSendTimer) {
-        clearInterval(autoSendTimer);
+        clearTimeout(autoSendTimer);
         autoSendTimer = null;
     }
+    // 仅当功能开启时，启动第一轮排程
     if (settings.autoSendEnabled) {
-        const intervalMs = settings.autoSendInterval * 60 * 1000;
-        
-        autoSendTimer = setInterval(() => {
-            if (!document.body.classList.contains('batch-favorite-mode')) {
-                simulateReply(); 
-            }
-        }, intervalMs);
+        _scheduleNextAutoSend();
     }
+}
+
+// 【新增】自主发起对话：异步自调度排程逻辑
+function _scheduleNextAutoSend() {
+    // 二次校验设置：如果在上一轮倒计时期间用户关闭了功能，直接停止
+    if (!settings.autoSendEnabled) return;
+
+    // 1. 确定本轮倒计时分钟数
+    let baseMinutes = settings.autoSendInterval || 5;
+    let actualMinutes = baseMinutes;
+    
+    // 如果设定时间 > 12 分钟，允许 ±12 分钟的随机浮动
+    if (baseMinutes > 12) {
+        let floatMinutes = (Math.random() * 24) - 12; 
+        actualMinutes = Math.max(1, baseMinutes + floatMinutes); // 保证至少1分钟
+    }
+    
+    const intervalMs = actualMinutes * 60 * 1000;
+    
+    autoSendTimer = setTimeout(() => {
+        // 1. 再次检查是否被用户中途关闭
+        if (!settings.autoSendEnabled) return;
+        
+        // 2. 防撞锁：如果在批量收藏模式，跳过本次触发，直接排下一轮
+        if (document.body.classList.contains('batch-favorite-mode')) {
+            _scheduleNextAutoSend();
+            return;
+        }
+        
+        // 3. 掷骰子判断：36% 概率即使时间到也不发起对话，直接进入下一轮
+        if (Math.random() < 0.36) {
+            _scheduleNextAutoSend();
+            return;
+        }
+        
+        // 4. 64% 概率决定发起对话，走现行的回复引擎逻辑
+       window.requestSimulateTask(true);
+        
+        // 5. 发起后立刻开始排下一轮倒计时（同时相当于重新校准了一次新的设置）
+        _scheduleNextAutoSend();
+        
+    }, intervalMs);
 }
 
         const updateUI = () => {
@@ -1414,6 +1451,12 @@ const addMessage = (message) => {
         };
 
         function sendMessage(textOverride = null, type = 'normal') {
+            // ── 【新增】防撞软锁：如果对方正在回复或排队中，锁定发送权限 ──
+            if (window._isSimulatingReply || window._pendingTask) {
+                showNotification('对方正在输入中，请稍等片刻再发送...', 'warning', 1500);
+                return; // 直接拦截本次发送
+            }
+
             const text = textOverride || DOMElements.messageInput.value.trim();
             const imageFile = DOMElements.imageInput.files[0];
             if (!text && !imageFile && type === 'normal') return;
@@ -1488,7 +1531,7 @@ if (!isBatchMode && type === 'normal') {
             if (shouldIgnore) return; // 流程结束，不回复
             
             // 确定回复，启动模拟回复总流程
-            simulateReply();
+            window.requestSimulateTask(false);
         }, readDelay);
     }, 10000); // 10秒防抖
 }
@@ -1580,7 +1623,12 @@ if (!isBatchMode && type === 'normal') {
             });
             const delayRange = settings.replyDelayMax - settings.replyDelayMin;
             const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-            setTimeout(simulateReply, batchMessages.length * 300 + randomDelay);
+            
+            // 修改点：批量发送后，也走安全的队列请求器，避免撞锁报错
+            setTimeout(function() {
+                window.requestSimulateTask(false);
+            }, batchMessages.length * 300 + randomDelay);
+            
             isBatchMode = false; batchMessages = [];
             DOMElements.batchBtn.classList.remove('active'); DOMElements.batchPreview.style.display = 'none';
             const placeholder = "";
@@ -1611,14 +1659,43 @@ if (!isBatchMode && type === 'normal') {
             ro.observe(inputArea);
         })();
 
-        window.simulateReply = function() {
-            // 防止多次触发导致消息堆积卡死
-            if (window._isSimulatingReply) {
-                console.warn('回复系统繁忙，阻断重入');
-                return;
-            }
-            window._isSimulatingReply = true;
+// ── 【新增】全局任务调度器：处理排队和优先级 ──
+window.requestSimulateTask = function(isAutoSend = false) {
+    // 1. 如果用户正在打字，不能打扰，排队等候
+    if (window._userIsTyping) {
+        // 优先级规则：自主发送 > 普通回复。如果队列里是普通回复，直接被自主发送覆盖
+        if (isAutoSend) {
+            window._pendingTask = { isAutoSend: true };
+        } else if (!window._pendingTask) {
+            window._pendingTask = { isAutoSend: false };
+        }
+        return;
+    }
+    
+    // 2. 如果对方已经在“正在输入”中
+    if (window._isSimulatingReply) {
+        // 优先级：自主发送可以抢占普通回复的排队位
+        if (isAutoSend && window._pendingTask && !window._pendingTask.isAutoSend) {
+            window._pendingTask = { isAutoSend: true };
+        } else if (!window._pendingTask) {
+            window._pendingTask = { isAutoSend };
+        }
+        return;
+    }
+    
+    // 3. 空闲状态，立刻执行
+    window._isSimulatingReply = true;
+    window.simulateReplyInternal(isAutoSend);
+};
 
+// 初始化全局状态变量
+window._userIsTyping = false;
+window._typingDebounceTimer = null;
+window._pendingTask = null;
+
+        // 原 simulateReply 更名为 simulateReplyInternal，只接收任务执行
+        window.simulateReplyInternal = function(isAutoSend = false) {
+            
             function showTypingIndicator() {
                 if (!settings.typingIndicatorEnabled) return;
                 const tiWrapper = document.getElementById('typing-indicator-wrapper');
@@ -1657,8 +1734,6 @@ if (!isBatchMode && type === 'normal') {
                     }
                 }
             }
-
-            // (原代码中的状态修改移到了 sendMessage 里，这里不再需要)
             
             // 人设切换与拍一拍触发保留
             if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
@@ -1724,24 +1799,25 @@ if (!isBatchMode && type === 'normal') {
                                 ? Math.max(0.1, Math.min(0.95, settings.replyDelayDecrement)) 
                                 : 0.9;
 
-            // 计算总时长：第一条(1~5) + 第二条(1~5)*0.9 + ...
             let totalThinkTime = 0;
             for (let i = 0; i < replyCount; i++) {
                 const currentRandDelay = settings.replyDelayMin + Math.random() * _delayRange;
                 totalThinkTime += currentRandDelay * Math.pow(_decrement, i);
             }
 
-            // 3. 确定本轮引用触发逻辑 (30%概率本轮触发，第一条必带，后续12%独立)
-            const isRoundQuoteTriggered = Math.random() < 0.30;
-            const cachedMessages = []; // 预抓取存放数组
+            const baseRequiredTime = (5000 * replyCount) + 3000;
+            if (totalThinkTime < baseRequiredTime) {
+                totalThinkTime = 0;
+            }
 
-            // 4. 预抓取字卡 (每隔5秒抓一条，在总时间结束前抓完)
+            const isRoundQuoteTriggered = Math.random() < 0.30;
+            const cachedMessages = [];
+
             const prefetchStartTime = Math.max(0, totalThinkTime - (5000 * replyCount) - 2000);
             const prefetchTimers = [];
 
             for (let i = 0; i < replyCount; i++) {
                 const timer = setTimeout(() => {
-                    // 预抓取：只准备文字、独立Emoji、贴纸
                     let replyText = '';
                     for (let t = 0; t < 6; t++) {
                         const picked = replyPoolOnce[Math.floor(Math.random() * replyPoolOnce.length)];
@@ -1777,20 +1853,17 @@ if (!isBatchMode && type === 'normal') {
                 prefetchTimers.push(timer);
             }
 
-            // 5. 计算连发时间轴 (总时间结束后，开始按 2~8秒发)
-            const sendDelays = [totalThinkTime]; // 第一条发送时间 = 总思考时间
+            const sendDelays = [totalThinkTime]; 
             let currentCumulative = totalThinkTime;
             for (let i = 1; i < replyCount; i++) {
-                currentCumulative += 2000 + Math.random() * 6000; // 2~8秒
+                currentCumulative += 2000 + Math.random() * 6000; 
                 sendDelays.push(currentCumulative);
             }
 
-            // 6. 执行连发
             const sendTimers = [];
             for (let i = 0; i < replyCount; i++) {
                 const sendTimer = setTimeout(() => {
                     try {
-                        // 兜底：如果因为总时间太短导致预抓取没抓到，临时抓一次
                         if (!cachedMessages[i]) {
                             let replyText = '';
                             for (let t = 0; t < 6; t++) {
@@ -1824,12 +1897,11 @@ if (!isBatchMode && type === 'normal') {
                             return;
                         }
 
-                        // 判断引用挂载
                         let replyTo = null;
                         if (isRoundQuoteTriggered && recentUserMsgs.length > 0) {
                             let shouldQuote = false;
-                            if (i === 0) shouldQuote = true; // 本轮触发，第一条必带
-                            else shouldQuote = Math.random() < 0.12; // 后续独立 12% 判定
+                            if (i === 0) shouldQuote = true; 
+                            else shouldQuote = Math.random() < 0.12; 
                             
                             if (shouldQuote) {
                                 const m = recentUserMsgs[Math.floor(Math.random() * recentUserMsgs.length)];
@@ -1854,7 +1926,6 @@ if (!isBatchMode && type === 'normal') {
                         }
                         playSound('message');
 
-                        // 发送额外贴纸
                         if (content.sticker) {
                             setTimeout(() => {
                                 addMessage({
@@ -1872,7 +1943,6 @@ if (!isBatchMode && type === 'normal') {
                             }, 400 + Math.random() * 600);
                         }
 
-                        // 发送独立Emoji
                         if (content.emoji) {
                             setTimeout(() => {
                                 addMessage({
@@ -1889,7 +1959,6 @@ if (!isBatchMode && type === 'normal') {
                             }, 300 + Math.random() * 400);
                         }
 
-                        // 最后一条发完，立刻隐藏“正在输入”
                         if (i === replyCount - 1) {
                             hideTypingIndicator();
                         }
@@ -1901,13 +1970,29 @@ if (!isBatchMode && type === 'normal') {
                 sendTimers.push(sendTimer);
             }
 
-            // 兜底机制：最后一条发完后，多留15秒防撞锁，然后强制收尾
-            const finalUnlockTime = sendDelays[sendDelays.length - 1] + 15000;
-            setTimeout(() => {
+            // ── 【修改】防撞缓冲期从 15秒 缩减为 3秒，并在结束后检查排队任务 ──
+            const finalUnlockTime = sendDelays[sendDelays.length - 1] + 3000;
+            setTimeout(function() {
                 window._isSimulatingReply = false;
                 hideTypingIndicator();
+                
+                // 执行完毕，检查是否有排队的任务
+                if (window._pendingTask) {
+                    const nextTask = window._pendingTask;
+                    
+                    // 如果用户还在打字，继续憋着不发
+                    if (window._userIsTyping) return;
+                    
+                    window._pendingTask = null; // 清空排队位
+                    window._isSimulatingReply = true;
+                    
+                    // 使用微延迟避免堆栈阻塞，执行下一个任务
+                    setTimeout(function() {
+                        window.simulateReplyInternal(nextTask.isAutoSend);
+                    }, 100);
+                }
             }, finalUnlockTime);
-        };             
+        };      
 
 function showModal(modalElement, focusElement = null) {
             if (modalElement._hideTimeout) {
@@ -2424,7 +2509,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         observer.observe(historyLoader);
     }
+
+    // ── 【新增】真正的打字防抖监听 ──
+    if (typeof DOMElements !== 'undefined' && DOMElements.messageInput) {
+        DOMElements.messageInput.addEventListener('input', function() {
+            window._userIsTyping = true;
+            
+            // 用户开始打字了，立刻暂停所有已排定的回复防抖
+            if (window._userSendDebounceTimer) clearTimeout(window._userSendDebounceTimer);
+            if (window._readStatusTimer) clearTimeout(window._readStatusTimer);
+            if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
+            
+            // 重置打字防抖计时器（10秒无新输入算作打完）
+            if (window._typingDebounceTimer) clearTimeout(window._typingDebounceTimer);
+            window._typingDebounceTimer = setTimeout(function() {
+                window._userIsTyping = false;
+                
+                // 停止打字后，检查是否需要恢复未完成的回复流程或执行排队任务
+                const lastMsg = messages[messages.length - 1];
+                // 如果最后发的消息还是未读，说明回复流程被我们打断了，重新启动防抖
+                if (lastMsg && lastMsg.sender === 'user' && lastMsg.status === 'sent') {
+                    if (window._userSendDebounceTimer) clearTimeout(window._userSendDebounceTimer);
+                    window._userSendDebounceTimer = setTimeout(function() {
+                        const readDelay = 3000 + Math.random() * 27000; 
+                        window._readStatusTimer = setTimeout(function() {
+                            let changed = false;
+                            messages.forEach(msg => {
+                                if (msg.sender === 'user' && msg.status !== 'read') {
+                                    msg.status = 'read'; changed = true;
+                                }
+                            });
+                            if (changed) { _updateReadReceiptsDOM(); throttledSaveData(); }
+
+                            const chance = Math.max(0, Math.min(1, Number(settings.readNoReplyChance) || 0));
+                            const shouldIgnore = settings.allowReadNoReply && (Math.random() < chance);
+                            
+                            if (!shouldIgnore) {
+                                window.requestSimulateTask(false); // 使用安全的任务请求器
+                            }
+                        }, readDelay);
+                    }, 10000);
+                } else if (window._pendingTask && !window._isSimulatingReply) {
+                    // 如果没有未处理消息，但有排队任务（比如对方自主发消息被憋住了），立刻执行
+                    const nextTask = window._pendingTask;
+                    window._pendingTask = null;
+                    window._isSimulatingReply = true;
+                    window.simulateReplyInternal(nextTask.isAutoSend);
+                }
+            }, 10000);
+        });
+    }
 });
-
-
-
