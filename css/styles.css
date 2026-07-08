@@ -544,6 +544,7 @@
             color: var(--text-primary);
             transition: background-color 0.5s ease, color 0.5s ease;
             height: 100vh;
+            height: 100dvh; 
             display: flex;
             flex-direction: column;
             overflow: hidden; 
@@ -881,7 +882,7 @@
             flex-direction: column;
             overflow: hidden;
             overflow-x: hidden;
-            padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: 0;
         }
         .chat-container {
             flex: 1;
@@ -1097,24 +1098,19 @@
             flex-shrink: 0;
             background-color: var(--input-area-bg);
             transition: background-color 0.5s ease;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: relative;
             z-index: 50;
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
         }
 
         body.immersive-mode .input-area-wrapper {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: relative;
         }
         body.immersive-mode .main-chat-area {
-            padding-bottom: 80px;
+            padding-bottom: 0;
         }
         .input-area {
             display: flex;
@@ -10835,3 +10831,28 @@
             border-color: var(--accent-color) !important;
             outline: none;
         }
+
+/* === 手机端强制精简底部栏 === */
+@media (max-width: 768px) {
+    /* 隐藏原来散落在外面的图片、表情、继续说、批量按钮 */
+    .attachment-btn,
+    .combo-btn,
+    .continue-btn,
+    .batch-btn {
+        display: none !important;
+    }
+    /* 强制显示＋号 */
+    #collapse-expand-btn {
+        display: flex !important;
+    }
+    /* 让输入框变得更胖一点，更好按 */
+    .message-input {
+        flex: 1;
+        min-height: 44px;
+        padding: 12px 20px;
+    }
+    .input-area {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+}
