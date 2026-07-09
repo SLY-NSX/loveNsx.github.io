@@ -10844,6 +10844,7 @@
 .input-area-wrapper {
     position: relative !important;
     z-index: 1001 !important;
+    isolation: isolate;
 }
 
 /* 3. 让表情、批量、收纳等浮窗弹到最上层 */
@@ -10869,6 +10870,7 @@
 
 /* 6. 手机端精简底部栏：改用维度塌陷，不用 display:none 避免点击失效 */
 @media (max-width: 768px) {
+    body:not(.bottom-collapse-mode) .collapse-hideable,
     body.bottom-collapse-mode .collapse-hideable {
         opacity: 0 !important;
         width: 0 !important;
@@ -10878,7 +10880,7 @@
         border: 0 !important;
         overflow: hidden !important;
         position: absolute !important;
-        left: -9999px !important;
+        left: -9999px !important; /* 用移出屏幕代替 display:none，确保 .click() 生效 */
     }
     #collapse-expand-btn {
         display: flex !important;
