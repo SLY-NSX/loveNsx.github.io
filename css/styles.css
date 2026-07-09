@@ -10832,17 +10832,60 @@
             outline: none;
         }
 
-/* === 手机端强制精简底部栏 === */
+/* === 修复排版后层级与点击问题 === */
+
+/* 1. 顶部栏层级适度提升，不要 1000，以免压住底部弹窗 */
+.header {
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+/* 2. 提升底部输入区的层级，并打破层叠上下文限制 */
+.input-area-wrapper {
+    position: relative !important;
+    z-index: 1001 !important;
+    isolation: isolate;
+}
+
+/* 3. 让表情、批量、收纳等浮窗弹到最上层 */
+.sticker-picker-popover,
+.batch-preview,
+#collapsed-extras-panel {
+    z-index: 1002 !important;
+}
+
+/* 4. 修复声明页(启动页)淡出后仍挡住顶部按钮的隐患 */
+#splash-declaration.splash-fade-out {
+    opacity: 0 !important;
+    pointer-events: none;
+    visibility: hidden !important; /* 彻底隐藏，防止透明层拦截点击 */
+}
+
+/* 5. 每日公告关闭后彻底移除 */
+#daily-greeting-modal.hidden {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* 6. 手机端精简底部栏：改用维度塌陷，不用 display:none 避免点击失效 */
 @media (max-width: 768px) {
-    /* 强制手机端隐藏次要按钮（直接用 CSS 隐藏，不依赖任何 JS） */
-    .collapse-hideable {
+    body:not(.bottom-collapse-mode) .collapse-hideable {
+        opacity: 0;
+        pointer-events: none;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden;
+        border: none !important;
+    }
+    body.bottom-collapse-mode .collapse-hideable {
         display: none !important;
     }
-    /* 强制显示＋号 */
     #collapse-expand-btn {
         display: flex !important;
     }
-    /* 让输入框变得更胖一点，更好按 */
     .message-input {
         flex: 1;
         min-height: 44px;
@@ -10854,23 +10897,11 @@
     }
 }
 
-/* 强制修复层级问题，防止被遮挡 */
-.header {
-    position: relative !important;
-    z-index: 1000 !important;
-}
-
+/* 7. 恢复弹窗默认层级，不滥用 !important */
 .modal {
-    z-index: 9999 !important;
+    z-index: 2000 !important;
 }
-
 .modal-content {
     position: relative !important;
-    z-index: 10000 !important;
-}
-
-/* 防止展开的面板遮挡背景 */
-#collapsed-extras-panel {
-    position: relative !important;
-    z-index: 10 !important;
+    z-index: 2001 !important;
 }
