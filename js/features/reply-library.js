@@ -2321,7 +2321,29 @@ function initReplyLibraryListeners() {
                 }
                 return;
             }
-            if (currentSubTab === 'custom' || currentSubTab === 'pokes' || currentSubTab === 'statuses') {
+            // 【新增】单独处理拍一拍的双输入框逻辑，不再走批量弹框
+            if (currentSubTab === 'pokes') {
+                const newAction = prompt('请输入动作 (例如: 拍了拍):', '');
+                if (newAction === null) return; // 用户点击取消
+                const newSuffix = prompt('请输入后缀 (可留空，例如: 的肩膀):', '');
+                if (newSuffix === null) return; // 用户点击取消
+    
+                let val = newSuffix.trim() ? `${newAction.trim()}+${newSuffix.trim()}` : newAction.trim();
+                if (!val) { showNotification('内容不能为空', 'warning'); return; }
+    
+                const valNorm = normalizeStringStrict(val);
+                if (customPokes.some(r => normalizeStringStrict(r) === valNorm)) {
+                    showNotification('该内容已存在', 'warning'); return;
+                }
+    
+                customPokes.unshift(val);
+                throttledSaveData(); renderReplyLibrary();
+                showNotification('✓ 添加成功', 'success');
+                return;
+            }
+
+            // 字卡和状态依然保留批量添加弹框
+            if (currentSubTab === 'custom' || currentSubTab === 'statuses') {
                 _showBatchAddDialog(); return;
             }
             let input;
