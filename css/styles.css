@@ -10868,19 +10868,13 @@
     pointer-events: none !important;
 }
 
-/* 6. 手机端精简底部栏：改用维度塌陷，不用 display:none 避免点击失效 */
+/* 6. 手机端强制开收纳模式，直接出加号 */
 @media (max-width: 768px) {
-    body.bottom-collapse-mode .collapse-hideable {
+    .collapse-hideable {
         display: none !important;
     }
-    body.bottom-collapse-mode #collapse-expand-btn {
+    #collapse-expand-btn {
         display: flex !important;
-    }
-    body:not(.bottom-collapse-mode) .collapse-hideable {
-        display: flex !important;
-    }
-    body:not(.bottom-collapse-mode) #collapse-expand-btn {
-        display: none !important;
     }
     .message-input {
         flex: 1;
