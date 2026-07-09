@@ -13,7 +13,6 @@ function setupEventListeners() {
         initAnniversaryModule,
         initThemeEditor,
         initThemeSchemes,
-        initComboMenu
     ];
 
     // 逐个执行，某个报错不影响其他按钮的绑定

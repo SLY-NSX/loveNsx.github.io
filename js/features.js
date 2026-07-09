@@ -536,52 +536,44 @@
     };
 })();
 
-function renderComboMenu() {
-    const content = document.getElementById('user-sticker-content');
-    content.innerHTML = '';
-    
-    const tabBar = document.createElement('div');
-    tabBar.style.cssText = 'display:flex; gap:8px; padding:8px; border-bottom:1px solid var(--border-color);';
-    tabBar.innerHTML = `
-        <button class="combo-tab active" data-tab="emoji" style="flex:1; padding:8px; border:none; background:var(--accent-color); color:#fff; border-radius:8px; cursor:pointer;">
-            😊 表情
-        </button>
-        <button class="combo-tab" data-tab="poke" style="flex:1; padding:8px; border:none; background:var(--secondary-bg); color:var(--text-primary); border-radius:8px; cursor:pointer;">
-            ✨ 拍一拍
-        </button>
-    `;
-    
-    const contentArea = document.createElement('div');
-    contentArea.id = 'combo-content-area';
-    contentArea.style.cssText = 'padding:10px; max-height:240px; overflow-y:auto;';
-    
-    content.appendChild(tabBar);
-    content.appendChild(contentArea);
-    
-    showEmojiTab();
-    
-    tabBar.querySelectorAll('.combo-tab').forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabBar.querySelectorAll('.combo-tab').forEach(b => {
-                b.style.background = 'var(--secondary-bg)';
-                b.style.color = 'var(--text-primary)';
-                b.classList.remove('active');
-            });
-            btn.style.background = 'var(--accent-color)';
-            btn.style.color = '#fff';
-            btn.classList.add('active');
-            
-            if (btn.dataset.tab === 'emoji') {
-                showEmojiTab();
-            } else {
-                showPokeTab();
-            }
-        });
-    });
-}
+window.renderComboContent = function(tabName) {
+    const picker = document.getElementById('user-sticker-picker');
+    if (!picker) return;
 
-function showEmojiTab() {
-    const area = document.getElementById('combo-content-area');
+    // 如果还没初始化过，给 Tab 按钮绑定点击事件
+    if (!picker._comboMenuInitialized) {
+        const tabBtns = picker.querySelectorAll('.combo-tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                tabBtns.forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = 'var(--text-secondary)';
+                    b.classList.remove('active');
+                });
+                this.style.background = 'var(--accent-color)';
+                this.style.color = '#fff';
+                this.classList.add('active');
+
+                const tab = this.dataset.tab;
+                const contentArea = picker.querySelector('#combo-content-area');
+                if (!contentArea) return;
+
+                if (tab === 'poke') {
+                    showPokeTab(contentArea);
+                } else {
+                    showEmojiTab(contentArea, tab === 'partner-sticker');
+                }
+            });
+        });
+        picker._comboMenuInitialized = true;
+    }
+
+    // 自动点击传入的 Tab
+    const targetBtn = picker.querySelector(`.combo-tab-btn[data-tab="${tabName || 'my-sticker'}"]`);
+    if (targetBtn) targetBtn.click();
+};
+
+function showEmojiTab(area, isPartner) {
     area.innerHTML = '';
     area.style.display = 'grid';
     area.style.gridTemplateColumns = 'repeat(5, 1fr)';
@@ -599,7 +591,9 @@ function showEmojiTab() {
         };
         area.appendChild(item);
     });
-    customEmojis.forEach(emoji => {
+
+    const emojis = customEmojis || [];
+    emojis.forEach(emoji => {
         const item = document.createElement('div');
         item.className = 'picker-item';
         item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
@@ -612,32 +606,34 @@ function showEmojiTab() {
         area.appendChild(item);
     });
 
-    stickerLibrary.forEach(src => {
+    const stickers = isPartner ? (window.partnerStickerLibrary || []) : (myStickerLibrary || []);
+    stickers.forEach(src => {
         const item = document.createElement('div');
         item.className = 'picker-item';
         item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
         item.onclick = () => {
-            if (isBatchMode) {
+            if (isBatchMode && !isPartner) {
                 batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
                 updateBatchPreview();
                 showNotification('已添加到批量发送', 'success', 1200);
             } else {
                 addMessage({
                     id: Date.now(),
-                    sender: 'user',
+                    sender: isPartner ? (settings.partnerName || '对方') : 'user',
                     text: '',
                     timestamp: new Date(),
                     image: src,
-                    status: 'sent',
+                    status: isPartner ? 'received' : 'sent',
                     type: 'normal'
                 });
                 playSound('send');
                 
-                const delayRange = settings.replyDelayMax - settings.replyDelayMin;
-                const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-                if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
-                // 【修改点3】替换为安全的任务请求器
-                window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
+                if (!isPartner) {
+                    const delayRange = settings.replyDelayMax - settings.replyDelayMin;
+                    const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
+                    if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
+                    window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
+                }
             }
             document.getElementById('user-sticker-picker').classList.remove('active');
         };
@@ -645,8 +641,7 @@ function showEmojiTab() {
     });
 }
 
-function showPokeTab() {
-    const area = document.getElementById('combo-content-area');
+function showPokeTab(area) {
     area.innerHTML = '';
     area.style.display = 'flex';
     area.style.flexDirection = 'column';
@@ -693,7 +688,6 @@ function showPokeTab() {
             document.getElementById('user-sticker-picker').classList.remove('active');
             const delayRange = settings.replyDelayMax - settings.replyDelayMin;
             const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-            // 【修改点4】替换为安全的任务请求器
             setTimeout(() => window.requestSimulateTask(false), randomDelay);
         };
         area.appendChild(btn);
