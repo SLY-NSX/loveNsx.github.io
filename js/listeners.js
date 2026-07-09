@@ -3156,7 +3156,15 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
                 }
             });
 
-            DOMElements.continueBtn.addEventListener('click', simulateReply);
+            // 修改为安全调用
+            DOMElements.continueBtn.addEventListener('click', () => {
+                if (typeof simulateReply === 'function') {
+                    simulateReply();
+                } else {
+                    console.warn('simulateReply 函数未找到，请检查是否被误删或作用域隔离');
+                    showNotification('继续说功能暂时不可用', 'error');
+                }
+            });
             DOMElements.batchBtn.addEventListener('click', toggleBatchMode);
         }
 
@@ -3199,8 +3207,6 @@ window.toggleCollapsedExtras = function() {
             extra.addEventListener('click', (e) => { e.stopPropagation(); primary.click(); });
         }
     }
-    wireExtra('combo-btn-extra', 'combo-btn');
-    wireExtra('batch-btn-extra', 'batch-btn');
 };
 
 window.exitCollapseMode = function() {
