@@ -1436,17 +1436,21 @@ const addMessage = (message) => {
             }
             
             let finalPokeText = pokeAction;
-            // 如果有 + 符号，替换为我的名字
+            const myName = settings.myName || '我';
+            const partnerName = settings.partnerName || '梦角';
+            
+            // 拼名逻辑：兼容新数据和旧数据
             if (finalPokeText.includes('+')) {
-                finalPokeText = finalPokeText.replace(/\+/g, settings.myName || '我');
+                finalPokeText = finalPokeText.replace(/\+/g, myName);
+            } else if (finalPokeText.includes('你')) {
+                finalPokeText = finalPokeText.replace(/你/g, myName);
             } else {
-                // 兼容旧数据
-                finalPokeText = finalPokeText + ` ${settings.myName || '我'}`;
+                finalPokeText = finalPokeText + ' ' + myName;
             }
 
             const pokeText = (typeof window._formatPartnerPokeText === 'function')
-                ? window._formatPartnerPokeText(`${settings.partnerName} ${finalPokeText}`)
-                : `${settings.partnerName} ${finalPokeText}`;
+                ? window._formatPartnerPokeText(`${partnerName} ${finalPokeText}`)
+                : `${partnerName} ${finalPokeText}`;
 
             addMessage({ id: Date.now(), text: pokeText, timestamp: new Date(), type: 'system' });
 

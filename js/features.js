@@ -656,7 +656,7 @@ function showPokeTab(area) {
     area.style.display = 'flex';
     area.style.flexDirection = 'column';
     area.style.gap = '8px';
-    area.style.overflowY = 'auto'; // 允许滚动查看更多
+    area.style.overflowY = 'auto';
 
     if (customPokes.length === 0) {
         area.style.alignItems = 'center';
@@ -668,8 +668,11 @@ function showPokeTab(area) {
                 ? window._sanitizePokeTextForDisplay(pokeText)
                 : pokeText;
             
-            // 展示时把 + 替换为 "Ta" 更好看
-            const displayText = cleanPokeText.replace(/\+/g, 'Ta');
+            // 在按钮上展示时，把 + 换成 'Ta' 更好看
+            let displayText = cleanPokeText;
+            if (displayText.includes('+')) {
+                displayText = displayText.replace(/\+/g, 'Ta');
+            }
             
             const btn = document.createElement('button');
             btn.textContent = displayText;
@@ -697,18 +700,21 @@ function showPokeTab(area) {
                 btn.style.transform = '';
             });
             btn.onclick = () => {
-                let finalPokeText = cleanPokeText;
-                // 如果有 + 符号，替换为对方名字
-                if (finalPokeText.includes('+')) {
-                    finalPokeText = finalPokeText.replace(/\+/g, settings.partnerName || '梦角');
+                const partnerName = settings.partnerName || '梦角';
+                const myName = settings.myName || '我';
+                
+                let finalTextStr = cleanPokeText;
+                if (finalTextStr.includes('+')) {
+                    finalTextStr = finalTextStr.replace(/\+/g, partnerName);
+                } else if (finalTextStr.includes('你')) {
+                    finalTextStr = finalTextStr.replace(/你/g, partnerName);
                 } else {
-                    // 兼容旧数据
-                    finalPokeText = finalPokeText + ` ${settings.partnerName || '梦角'}`;
+                    finalTextStr = finalTextStr + ' ' + partnerName;
                 }
                 
                 addMessage({
                     id: Date.now(), 
-                    text: _formatPokeText(`${settings.myName} ${finalPokeText}`), 
+                    text: _formatPokeText(`${myName} ${finalTextStr}`), 
                     timestamp: new Date(), 
                     type: 'system'
                 });
@@ -739,10 +745,78 @@ function showPokeTab(area) {
     `;
     customBtn.onclick = () => {
         document.getElementById('user-sticker-picker').classList.remove('active');
-        showModal(DOMElements.pokeModal.modal, DOMElements.pokeModal.input);
+        if (typeof showModal === 'function' && DOMElements.pokeModal && DOMElements.pokeModal.modal) {
+            showModal(DOMElements.pokeModal.modal);
+        }
     };
     area.appendChild(customBtn);
 }
+
+// 全局拦截拍一拍的发送事件
+window._handlePokeSend = function() {
+    const inputA = document.getElementById('poke-input-a');
+    const inputB = document.getElementById('poke-input-b');
+    const saveCheckbox = document.getElementById('poke-save-to-library');
+    
+    const actionA = inputA.value.trim();
+    const suffixB = inputB.value.trim();
+    
+    if (!actionA) {
+        if (typeof showNotification === 'function') showNotification('请输入动作内容', 'warning');
+        return;
+    }
+    
+    // 拼接存储格式：如有后缀，中间用+分隔；无后缀，末尾补+，方便替换名字
+    let rawText = actionA;
+    if (suffixB) {
+        rawText += '+' + suffixB;
+    } else {
+        rawText += '+';
+    }
+    
+    // 发送操作：我是发起方
+    const partnerName = settings.partnerName || '梦角';
+    const myName = settings.myName || '我';
+    let myPokeText = rawText.replace(/\+/g, partnerName);
+    const fullText = `${myName} ${myPokeText}`;
+    
+    const formattedText = (typeof window._formatPokeText === 'function') 
+        ? window._formatPokeText(fullText) 
+        : fullText;
+    
+    addMessage({
+        id: Date.now,
+        text: formattedText,
+        timestamp: new Date(),
+        type: 'system'
+    });
+    
+    // 如果勾选了保存
+    if (saveCheckbox && saveCheckbox.checked) {
+        if (typeof customPokes !== 'undefined') {
+            customPokes.push(rawText); // 保存带 + 的原始文本
+            if (typeof saveData === 'function') saveData();
+            if (typeof renderReplyLibrary === 'function') renderReplyLibrary();
+        }
+    }
+    
+    // 清空并关闭
+    inputA.value = '';
+    inputB.value = '';
+    if (saveCheckbox) saveCheckbox.checked = false;
+    
+    if (typeof hideModal === 'function') {
+        hideModal(document.getElementById('poke-modal'));
+    }
+    
+    const delayRange = settings.replyDelayMax - settings.replyDelayMin;
+    const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
+    setTimeout(() => {
+        if (typeof window.requestSimulateTask === 'function') {
+            window.requestSimulateTask(false);
+        }
+    }, randomDelay);
+};
 
         function initCoreListeners() {
 
