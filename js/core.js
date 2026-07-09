@@ -2560,9 +2560,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-
- */
-function simulateReply() {
-    window.requestSimulateTask(false);
-}
