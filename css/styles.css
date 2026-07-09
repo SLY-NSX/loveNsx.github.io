@@ -10856,3 +10856,24 @@
         gap: 10px;
     }
 }
+
+/* 强制修复层级问题，防止被遮挡 */
+.header {
+    position: relative !important;
+    z-index: 1000 !important;
+}
+
+.modal {
+    z-index: 9999 !important;
+}
+
+.modal-content {
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+/* 防止展开的面板遮挡背景 */
+#collapsed-extras-panel {
+    position: relative !important;
+    z-index: 10 !important;
+}
