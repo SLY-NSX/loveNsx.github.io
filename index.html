@@ -322,12 +322,12 @@
             </button>
             
             <!-- 表情拍一拍 -->
-            <button class="collapsed-extra-btn" id="combo-btn-extra" title="表情拍一拍" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); document.getElementById('combo-btn').click(); })()">
+            <button class="collapsed-extra-btn" id="combo-btn-extra" title="表情拍一拍" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if (typeof toggleStickerPicker === 'function') toggleStickerPicker(true); else document.getElementById('combo-btn').click(); })()">
                 <i class="fas fa-laugh-beam"></i>
             </button>
             
             <!-- 批量发送 -->
-            <button class="collapsed-extra-btn" id="batch-btn-extra" title="批量发送" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); document.getElementById('batch-btn').click(); })()">
+            <button class="collapsed-extra-btn" id="batch-btn-extra" title="批量发送" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if (typeof toggleBatchMode === 'function') toggleBatchMode(); else document.getElementById('batch-btn').click(); })()">
                 <i class="fas fa-layer-group"></i>
             </button>
             
