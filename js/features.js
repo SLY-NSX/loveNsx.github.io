@@ -561,84 +561,94 @@ window.renderComboContent = function(tabName) {
                 if (tab === 'poke') {
                     showPokeTab(contentArea);
                 } else {
-                    showEmojiTab(contentArea, tab === 'partner-sticker');
+                    showEmojiTab(contentArea, tab); // 传入 'emoji' 或 'sticker'
                 }
             });
         });
         picker._comboMenuInitialized = true;
     }
 
-    // 自动点击传入的 Tab
-    const targetBtn = picker.querySelector(`.combo-tab-btn[data-tab="${tabName || 'my-sticker'}"]`);
+    // 自动点击传入的 Tab，默认打开表情库
+    const targetBtn = picker.querySelector(`.combo-tab-btn[data-tab="${tabName || 'sticker'}"]`);
     if (targetBtn) targetBtn.click();
 };
 
-function showEmojiTab(area, isPartner) {
+function showEmojiTab(area, type) {
     area.innerHTML = '';
     area.style.display = 'grid';
     area.style.gridTemplateColumns = 'repeat(5, 1fr)';
     area.style.gap = '8px';
     
-    CONSTANTS.REPLY_EMOJIS.forEach(emoji => {
-        const item = document.createElement('div');
-        item.className = 'picker-item';
-        item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
-        item.onclick = () => {
-            const input = document.getElementById('message-input');
-            input.value += emoji;
-            document.getElementById('user-sticker-picker').classList.remove('active');
-            input.focus();
-        };
-        area.appendChild(item);
-    });
+    if (type === 'emoji') {
+        // 渲染 Emoji
+        CONSTANTS.REPLY_EMOJIS.forEach(emoji => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
+            item.onclick = () => {
+                const input = document.getElementById('message-input');
+                input.value += emoji;
+                document.getElementById('user-sticker-picker').classList.remove('active');
+                input.focus();
+            };
+            area.appendChild(item);
+        });
 
-    const emojis = customEmojis || [];
-    emojis.forEach(emoji => {
-        const item = document.createElement('div');
-        item.className = 'picker-item';
-        item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
-        item.onclick = () => {
-            const input = document.getElementById('message-input');
-            input.value += emoji;
-            document.getElementById('user-sticker-picker').classList.remove('active');
-            input.focus();
-        };
-        area.appendChild(item);
-    });
+        const emojis = customEmojis || [];
+        emojis.forEach(emoji => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
+            item.onclick = () => {
+                const input = document.getElementById('message-input');
+                input.value += emoji;
+                document.getElementById('user-sticker-picker').classList.remove('active');
+                input.focus();
+            };
+            area.appendChild(item);
+        });
+    } else if (type === 'sticker') {
+        // 渲染双方共享的表情库
+        const stickers = stickerLibrary || [];
+        if (stickers.length === 0) {
+            area.style.display = 'flex';
+            area.style.justifyContent = 'center';
+            area.style.alignItems = 'center';
+            area.innerHTML = '<div class="empty-sticker-tip"><i class="fas fa-image"></i><span>表情库为空<br>请点击右上角添加</span></div>';
+            return;
+        }
 
-    const stickers = isPartner ? (window.partnerStickerLibrary || []) : (myStickerLibrary || []);
-    stickers.forEach(src => {
-        const item = document.createElement('div');
-        item.className = 'picker-item';
-        item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
-        item.onclick = () => {
-            if (isBatchMode && !isPartner) {
-                batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
-                updateBatchPreview();
-                showNotification('已添加到批量发送', 'success', 1200);
-            } else {
-                addMessage({
-                    id: Date.now(),
-                    sender: isPartner ? (settings.partnerName || '对方') : 'user',
-                    text: '',
-                    timestamp: new Date(),
-                    image: src,
-                    status: isPartner ? 'received' : 'sent',
-                    type: 'normal'
-                });
-                playSound('send');
-                
-                if (!isPartner) {
+        stickers.forEach(src => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
+            item.onclick = () => {
+                if (isBatchMode) {
+                    batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
+                    updateBatchPreview();
+                    showNotification('已添加到批量发送', 'success', 1200);
+                } else {
+                    addMessage({
+                        id: Date.now(),
+                        sender: 'user', // 我发出的
+                        text: '',
+                        timestamp: new Date(),
+                        image: src,
+                        status: 'sent',
+                        type: 'normal'
+                    });
+                    playSound('send');
+                    
                     const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                     const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
                     if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
                     window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
                 }
-            }
-            document.getElementById('user-sticker-picker').classList.remove('active');
-        };
-        area.appendChild(item);
-    });
+                document.getElementById('user-sticker-picker').classList.remove('active');
+            };
+            area.appendChild(item);
+        });
+    }
 }
 
 function showPokeTab(area) {
@@ -646,52 +656,70 @@ function showPokeTab(area) {
     area.style.display = 'flex';
     area.style.flexDirection = 'column';
     area.style.gap = '8px';
-    
-    const quickPokes = customPokes.slice(0, 6);
-    
-    quickPokes.forEach(pokeText => {
-        const cleanPokeText = (typeof window._sanitizePokeTextForDisplay === 'function')
-            ? window._sanitizePokeTextForDisplay(pokeText)
-            : pokeText;
-        const btn = document.createElement('button');
-        btn.textContent = cleanPokeText;
-        btn.style.cssText = `
-            padding: 10px 14px;
-            background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04));
-            border: 1px solid rgba(var(--accent-color-rgb),0.15);
-            border-radius: 12px;
-            cursor: pointer;
-            text-align: left;
-            font-size: 13px;
-            transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
-            color: var(--text-primary);
-            font-family: var(--font-family);
-            width: 100%;
-        `;
-        btn.addEventListener('mouseover', () => {
-            btn.style.background = 'linear-gradient(135deg, rgba(var(--accent-color-rgb),0.12), rgba(var(--accent-color-rgb),0.06))';
-            btn.style.borderColor = 'var(--accent-color)';
-            btn.style.transform = 'translateX(4px)';
-        });
-        btn.addEventListener('mouseout', () => {
-            btn.style.background = 'linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04))';
-            btn.style.borderColor = 'rgba(var(--accent-color-rgb),0.15)';
-            btn.style.transform = '';
-        });
-        btn.onclick = () => {
-            addMessage({
-                id: Date.now(), 
-                text: _formatPokeText(`${settings.myName} ${cleanPokeText}`), 
-                timestamp: new Date(), 
-                type: 'system'
+    area.style.overflowY = 'auto'; // 允许滚动查看更多
+
+    if (customPokes.length === 0) {
+        area.style.alignItems = 'center';
+        area.style.justifyContent = 'center';
+        area.innerHTML = '<div class="empty-sticker-tip"><i class="fas fa-hand-sparkles"></i><span>拍一拍库为空<br>请点击下方按钮添加</span></div>';
+    } else {
+        customPokes.forEach(pokeText => {
+            const cleanPokeText = (typeof window._sanitizePokeTextForDisplay === 'function')
+                ? window._sanitizePokeTextForDisplay(pokeText)
+                : pokeText;
+            
+            // 展示时把 + 替换为 "Ta" 更好看
+            const displayText = cleanPokeText.replace(/\+/g, 'Ta');
+            
+            const btn = document.createElement('button');
+            btn.textContent = displayText;
+            btn.style.cssText = `
+                padding: 10px 14px;
+                background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04));
+                border: 1px solid rgba(var(--accent-color-rgb),0.15);
+                border-radius: 12px;
+                cursor: pointer;
+                text-align: left;
+                font-size: 13px;
+                transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+                color: var(--text-primary);
+                font-family: var(--font-family);
+                width: 100%;
+            `;
+            btn.addEventListener('mouseover', () => {
+                btn.style.background = 'linear-gradient(135deg, rgba(var(--accent-color-rgb),0.12), rgba(var(--accent-color-rgb),0.06))';
+                btn.style.borderColor = 'var(--accent-color)';
+                btn.style.transform = 'translateX(4px)';
             });
-            document.getElementById('user-sticker-picker').classList.remove('active');
-            const delayRange = settings.replyDelayMax - settings.replyDelayMin;
-            const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-            setTimeout(() => window.requestSimulateTask(false), randomDelay);
-        };
-        area.appendChild(btn);
-    });
+            btn.addEventListener('mouseout', () => {
+                btn.style.background = 'linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04))';
+                btn.style.borderColor = 'rgba(var(--accent-color-rgb),0.15)';
+                btn.style.transform = '';
+            });
+            btn.onclick = () => {
+                let finalPokeText = cleanPokeText;
+                // 如果有 + 符号，替换为对方名字
+                if (finalPokeText.includes('+')) {
+                    finalPokeText = finalPokeText.replace(/\+/g, settings.partnerName || '梦角');
+                } else {
+                    // 兼容旧数据
+                    finalPokeText = finalPokeText + ` ${settings.partnerName || '梦角'}`;
+                }
+                
+                addMessage({
+                    id: Date.now(), 
+                    text: _formatPokeText(`${settings.myName} ${finalPokeText}`), 
+                    timestamp: new Date(), 
+                    type: 'system'
+                });
+                document.getElementById('user-sticker-picker').classList.remove('active');
+                const delayRange = settings.replyDelayMax - settings.replyDelayMin;
+                const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
+                setTimeout(() => window.requestSimulateTask(false), randomDelay);
+            };
+            area.appendChild(btn);
+        });
+    }
     
     const customBtn = document.createElement('button');
     customBtn.innerHTML = '<i class="fas fa-edit"></i> 自定义拍一拍';
@@ -715,6 +743,7 @@ function showPokeTab(area) {
     };
     area.appendChild(customBtn);
 }
+
         function initCoreListeners() {
 
 

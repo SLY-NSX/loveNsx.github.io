@@ -232,13 +232,14 @@ if (myStickerQuickUpload) {
         for (const file of validFiles) {
             try {
                 const base64 = await optimizeImage(file, 300, 0.8);
-                myStickerLibrary.push(base64);
+                // 推送到共享表情库 stickerLibrary
+                stickerLibrary.push(base64);
                 ok++;
             } catch(err) { fail++; }
         }
         throttledSaveData();
-        if (typeof renderComboContent === 'function') renderComboContent('my-sticker');
-        showNotification(fail > 0 ? `上传完成：${ok} 成功 ${fail} 失败` : `✓ 已添加 ${ok} 张到我的表情库`, fail > 0 ? 'warning' : 'success');
+        if (typeof renderComboContent === 'function') renderComboContent('sticker');
+        showNotification(fail > 0 ? `上传完成：${ok} 成功 ${fail} 失败` : `✓ 已添加 ${ok} 张到共享表情库`, fail > 0 ? 'warning' : 'success');
         e.target.value = '';
     });
 }
@@ -269,17 +270,3 @@ window.addEventListener('load', function() {
         } catch(e) { console.warn('Daily greeting timing error:', e); }
     }, 4500);
 }, { once: true });
-
-// 点击空白处自动关闭表情/拍一拍弹窗
-document.addEventListener('click', function(e) {
-    const stickerPicker = document.getElementById('user-sticker-picker');
-    // 如果弹窗处于打开状态
-    if (stickerPicker && stickerPicker.classList.contains('active')) {
-        // 检查点击的目标：如果不是弹窗内部，也不是触发按钮（底部栏和收纳栏的两个按钮），则关闭
-        if (!stickerPicker.contains(e.target) && 
-            !e.target.closest('#combo-btn') && 
-            !e.target.closest('#combo-btn-extra')) {
-            stickerPicker.classList.remove('active');
-        }
-    }
-});

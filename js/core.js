@@ -1434,9 +1434,21 @@ const addMessage = (message) => {
             if (typeof window._sanitizePokeTextForDisplay === 'function') {
                 pokeAction = window._sanitizePokeTextForDisplay(pokeAction);
             }
+            
+            let finalPokeText = pokeAction;
+            // 如果有 + 符号，替换为我的名字
+            if (finalPokeText.includes('+')) {
+                finalPokeText = finalPokeText.replace(/\+/g, settings.myName || '我');
+            } else {
+                // 兼容旧数据
+                finalPokeText = finalPokeText + ` ${settings.myName || '我'}`;
+            }
+
             const pokeText = (typeof window._formatPartnerPokeText === 'function')
-                ? window._formatPartnerPokeText(`${settings.partnerName} ${pokeAction}`)
-                : `${settings.partnerName} ${pokeAction}`;
+                ? window._formatPartnerPokeText(`${settings.partnerName} ${finalPokeText}`)
+                : `${settings.partnerName} ${finalPokeText}`;
+
+            addMessage({ id: Date.now(), text: pokeText, timestamp: new Date(), type: 'system' });
 
             addMessage({ id: Date.now(), text: pokeText, timestamp: new Date(), type: 'system' });
             if (typeof playSound === 'function') playSound('partner_poke');
