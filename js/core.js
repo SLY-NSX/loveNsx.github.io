@@ -1439,11 +1439,9 @@ const addMessage = (message) => {
             const myName = settings.myName || '我';
             const partnerName = settings.partnerName || '梦角';
             
-            // 拼名逻辑：兼容新数据和旧数据
+            // 只处理带 + 的新格式，旧数据直接拼在名字后面
             if (finalPokeText.includes('+')) {
                 finalPokeText = finalPokeText.replace(/\+/g, myName);
-            } else if (finalPokeText.includes('你')) {
-                finalPokeText = finalPokeText.replace(/你/g, myName);
             } else {
                 finalPokeText = finalPokeText + ' ' + myName;
             }

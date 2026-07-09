@@ -704,10 +704,9 @@ function showPokeTab(area) {
                 const myName = settings.myName || '我';
                 
                 let finalTextStr = cleanPokeText;
+                // 只处理带 + 的新格式，旧数据直接拼在名字后面
                 if (finalTextStr.includes('+')) {
                     finalTextStr = finalTextStr.replace(/\+/g, partnerName);
-                } else if (finalTextStr.includes('你')) {
-                    finalTextStr = finalTextStr.replace(/你/g, partnerName);
                 } else {
                     finalTextStr = finalTextStr + ' ' + partnerName;
                 }
