@@ -1,22 +1,28 @@
 function setupEventListeners() {
-    try {
-        initCoreListeners();
-        initModalListeners();
-        initChatActionListeners();
-        initHeaderAndSettingsListeners();
-        initDataManagementListeners();
-        initNewFeatureListeners();
-        setupTutorialListeners();
-        initMoodListeners();
-        initDecisionModule(); 
-        initAnniversaryModule(); 
-        initThemeEditor(); 
-        initThemeSchemes();
-        
-        initComboMenu(); 
-        
-    } catch (e) {
-        console.error("事件绑定过程中发生错误:", e);
+    // 将所有初始化函数放入数组
+    const fns = [
+        initCoreListeners,
+        initModalListeners,
+        initChatActionListeners,
+        initHeaderAndSettingsListeners,
+        initDataManagementListeners,
+        initNewFeatureListeners,
+        setupTutorialListeners,
+        initMoodListeners,
+        initDecisionModule,
+        initAnniversaryModule,
+        initThemeEditor,
+        initThemeSchemes,
+        initComboMenu
+    ];
+
+    // 逐个执行，某个报错不影响其他按钮的绑定
+    for (const fn of fns) {
+        try {
+            if (typeof fn === 'function') fn();
+        } catch (e) {
+            console.error(`[事件绑定失败] ${fn.name || '未知函数'}:`, e);
+        }
     }
 }
 
