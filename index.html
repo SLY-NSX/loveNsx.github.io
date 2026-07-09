@@ -312,22 +312,22 @@
         <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;">
             
             <!-- 继续说 -->
-            <button class="collapsed-extra-btn" title="让对方继续说" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); document.getElementById('continue-btn').click(); })()">
+            <button class="collapsed-extra-btn" title="让对方继续说" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if(typeof simulateReply==='function') simulateReply(); })()">
                 <i class="fas fa-ellipsis-h"></i>
             </button>
             
             <!-- 发送图片 -->
-            <button class="collapsed-extra-btn" id="attachment-btn-extra" title="发送图片" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); document.getElementById('attachment-btn').click(); })()">
+            <button class="collapsed-extra-btn" id="attachment-btn-extra" title="发送图片" onclick="document.getElementById('image-input').click()">
                 <i class="fas fa-image"></i>
             </button>
             
             <!-- 表情拍一拍 -->
-            <button class="collapsed-extra-btn" id="combo-btn-extra" title="表情拍一拍" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if (typeof toggleStickerPicker === 'function') toggleStickerPicker(true); else document.getElementById('combo-btn').click(); })()">
+            <button class="collapsed-extra-btn" id="combo-btn-extra" title="表情拍一拍" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); var p=document.getElementById('user-sticker-picker'); if(p){p.classList.toggle('active'); if(p.classList.contains('active') && typeof renderComboContent==='function'){renderComboContent('my-sticker');}} })()">
                 <i class="fas fa-laugh-beam"></i>
             </button>
             
             <!-- 批量发送 -->
-            <button class="collapsed-extra-btn" id="batch-btn-extra" title="批量发送" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if (typeof toggleBatchMode === 'function') toggleBatchMode(); else document.getElementById('batch-btn').click(); })()">
+            <button class="collapsed-extra-btn" id="batch-btn-extra" title="批量发送" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if(typeof toggleBatchMode==='function') toggleBatchMode(); })()">
                 <i class="fas fa-layer-group"></i>
             </button>
             
@@ -350,15 +350,15 @@
 </button>
     <button class="attachment-btn input-btn collapse-hideable" id="attachment-btn" title="发送图片"><i class="fas fa-image"></i></button>
     
-    <button class="combo-btn input-btn collapse-hideable" id="combo-btn" title="表情 & 拍一拍">
+    <button class="combo-btn input-btn collapse-hideable" id="combo-btn" title="表情 & 拍一拍" onclick="(function(){var p=document.getElementById('user-sticker-picker'); if(p){p.classList.toggle('active'); if(p.classList.contains('active') && typeof renderComboContent==='function'){renderComboContent('my-sticker');}}})()">
         <i class="fas fa-laugh-beam"></i>
     </button>
 
     <textarea class="message-input" id="message-input" placeholder="" rows="1"></textarea>
     
     <div class="input-buttons">
-    <button class="continue-btn input-btn" id="continue-btn" title="让对方继续说"><i class="fas fa-ellipsis-h"></i></button>
-        <button class="batch-btn input-btn collapse-hideable" id="batch-btn" title="批量发送模式"><i class="fas fa-layer-group"></i></button>
+    <button class="continue-btn input-btn" id="continue-btn" title="让对方继续说" onclick="if(typeof simulateReply==='function'){simulateReply();}"><i class="fas fa-ellipsis-h"></i></button>
+        <button class="batch-btn input-btn collapse-hideable" id="batch-btn" title="批量发送模式" onclick="if(typeof toggleBatchMode==='function'){toggleBatchMode();}"><i class="fas fa-layer-group"></i></button>
         <button class="send-btn input-btn" id="send-btn" title="发送消息"><i class="fas fa-paper-plane"></i></button>
         
         <div class="sticker-picker-popover" id="user-sticker-picker">
