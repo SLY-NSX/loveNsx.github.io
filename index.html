@@ -311,11 +311,6 @@
     <div class="collapsed-extras-inner" style="padding:12px; background:var(--secondary-bg); border-top:1px solid var(--border-color);">
         <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;">
             
-            <!-- 继续说 -->
-            <button class="collapsed-extra-btn" title="让对方继续说" onclick="if(typeof simulateReply==='function'){simulateReply();} document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open');">
-                <i class="fas fa-ellipsis-h"></i>
-            </button>
-            
             <!-- 发送图片 -->
             <button class="collapsed-extra-btn" id="attachment-btn-extra" title="发送图片" onclick="document.getElementById('image-input').click()">
                 <i class="fas fa-image"></i>
@@ -334,11 +329,6 @@
             <!-- 视频通话 -->
             <button class="collapsed-extra-btn" id="collapsed-call-btn" title="视频通话" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); if(window.callFeature&&typeof window.callFeature.startCall==='function')window.callFeature.startCall(false); })()">
                 <i class="fas fa-video"></i>
-            </button>
-            
-            <!-- 退出收纳 -->
-            <button class="collapsed-extra-btn" title="退出收纳" onclick="(function(){ document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open'); window.exitCollapseMode && window.exitCollapseMode(); })()" style="color:#ff5050; background:rgba(255,80,80,0.1);">
-                <i class="fas fa-times"></i>
             </button>
 
         </div>
@@ -367,8 +357,8 @@
                 <button class="combo-tab-btn" data-tab="sticker"><i class="fas fa-image" style="font-size:10px;"></i> 表情库</button>
                 <button class="combo-tab-btn" data-tab="poke"><i class="fas fa-hand-sparkles" style="font-size:10px;"></i> 拍一拍</button>
                 <div style="margin-left:auto;display:flex;align-items:center;gap:4px;">
-                    <button id="sticker-add-btn" onclick="document.getElementById('my-sticker-quick-upload').click()" title="添加共享表情" style="background:var(--accent-color);border:none;cursor:pointer;padding:4px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;border-radius:8px;transition:all 0.2s;box-shadow:0 2px 8px rgba(var(--accent-color-rgb),0.35);" onmouseover="this.style.opacity='0.85';this.style.transform='scale(1.05)'" onmouseout="this.style.opacity='1';this.style.transform='scale(1)'"><i class="fas fa-plus"></i> 添加</button>
-                    <button onclick="window.openMyStickerSettings()" title="管理表情库" style="background:none;border:none;cursor:pointer;padding:4px 8px;color:var(--text-secondary);font-size:12px;display:flex;align-items:center;gap:3px;border-radius:6px;transition:all 0.2s;" onmouseover="this.style.background='rgba(var(--accent-color-rgb),0.12)';this.style.color='var(--accent-color)'" onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'"><i class="fas fa-cog"></i></button>
+                <button id="sticker-add-btn" onclick="document.getElementById('my-sticker-quick-upload').click()" title="添加共享表情" style="background:var(--accent-color);border:none;cursor:pointer;padding:4px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;border-radius:8px;transition:all 0.2s;box-shadow:0 2px 8px rgba(var(--accent-color-rgb),0.35);" onmouseover="this.style.opacity='0.85';this.style.transform='scale(1.05)'" onmouseout="this.style.opacity='1';this.style.transform='scale(1)'"><i class="fas fa-plus"></i> 添加</button>
+                <button onclick="window.openMyStickerSettings()" title="管理表情库" style="background:none;border:none;cursor:pointer;padding:4px 8px;color:var(--text-secondary);font-size:12px;display:flex;align-items:center;gap:3px;border-radius:6px;transition:all 0.2s;" onmouseover="this.style.background='rgba(var(--accent-color-rgb),0.12)';this.style.color='var(--accent-color)'" onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'"><i class="fas fa-cog"></i></button>
             </div>
         </div>
             <div class="combo-content-area" id="combo-content-area">
