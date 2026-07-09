@@ -1364,10 +1364,32 @@ function editItem(index, oldText) {
         const l2 = prompt('修改副标题:', parts[1] || '');
         if (l2 === null) return;
         newText = `${l1}|${l2}`;
+    } else if (currentSubTab === 'pokes') {
+        // 【新增】拍一拍专用双输入框逻辑
+        let actionPart = oldText;
+        let suffixPart = '';
+        
+        // 兼容旧数据：如果包含 "+"，则拆分为动作和后缀
+        if (oldText.includes('+')) {
+            const parts = oldText.split('+');
+            actionPart = parts[0];
+            suffixPart = parts.slice(1).join('+'); // 防止后缀里有多个+
+        }
+        
+        const newAction = prompt('修改动作 (例如: 拍了拍):', actionPart);
+        if (newAction === null) return; // 用户点击取消
+        
+        const newSuffix = prompt('修改后缀 (可留空，例如: 的肩膀):', suffixPart);
+        if (newSuffix === null) return; // 用户点击取消
+        
+        // 组合成 "动作+后缀" 的新格式，如果后缀为空则只保留动作
+        newText = newSuffix.trim() ? `${newAction.trim()}+${newSuffix.trim()}` : newAction.trim();
     } else {
         newText = prompt('修改内容:', oldText);
     }
+    
     if (newText === null || newText.trim() === '') return;
+    
     if (_tabHasGroups()) {
         const ctx = _getGroupCtx();
         if (ctx.groups) {
@@ -1381,6 +1403,7 @@ function editItem(index, oldText) {
     else if (currentSubTab === 'statuses') customStatuses[index] = newText.trim();
     else if (currentSubTab === 'mottos') customMottos[index] = newText.trim();
     else if (currentSubTab === 'intros') customIntros[index] = newText.trim();
+    
     throttledSaveData();
     renderReplyLibrary();
 }
