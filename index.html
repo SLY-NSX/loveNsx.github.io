@@ -409,12 +409,19 @@
             <div class="modal-title">
                 <i class="fas fa-hand-sparkles"></i><span>拍一拍</span>
             </div>
-            <input type="text" class="modal-input" id="poke-input" placeholder="请用 + 代表对方名字，如：戳了戳+的脸">
-                <div style="width:100%;display:flex;align-items:center;gap:8px;margin:6px 0 0;">
+            <div style="margin-bottom: 16px;">
+                <input type="text" class="modal-input" id="poke-input-a" placeholder="动作 (必填)，如：戳了戳" style="margin-bottom: 8px;">
+                <input type="text" class="modal-input" id="poke-input-b" placeholder="后缀 (选填)，如：的脸" style="margin-bottom: 0;">
+            </div>
+            <div class="modal-buttons" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                <div style="width:100%;display:flex;align-items:center;gap:8px;">
                     <input type="checkbox" id="poke-save-to-library" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent-color);">
                     <label for="poke-save-to-library" style="font-size:12px;color:var(--text-secondary);cursor:pointer;">保存到拍一拍库</label>
                 </div>
-                <button class="modal-btn modal-btn-secondary" id="cancel-poke">取消</button><button class="modal-btn modal-btn-primary" id="send-poke">发送</button>
+                <div style="display:flex; gap:12px;">
+                    <button class="modal-btn modal-btn-secondary" id="cancel-poke" onclick="if(typeof hideModal==='function')hideModal(document.getElementById('poke-modal'))">取消</button>
+                    <button class="modal-btn modal-btn-primary" id="send-poke" onclick="window._handlePokeSend()">发送</button>
+                </div>
             </div>
         </div>
     </div>
