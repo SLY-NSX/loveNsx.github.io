@@ -3208,6 +3208,7 @@ window.toggleCollapsedExtras = function() {
     }
     wireExtra('combo-btn-extra', 'combo-btn');
     wireExtra('batch-btn-extra', 'batch-btn');
+    wireExtra('continue-btn-extra', 'continue-btn'); 
 };
 
 window.exitCollapseMode = function() {
