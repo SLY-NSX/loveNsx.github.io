@@ -312,7 +312,7 @@
         <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;">
             
             <!-- 继续说 -->
-            <button class="collapsed-extra-btn" title="让对方继续说" onclick="if(typeof simulateReply==='function'){simulateReply();} document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open');">
+            <button class="collapsed-extra-btn" id="continue-btn-extra" title="让对方继续说" onclick="document.getElementById('collapsed-extras-panel').style.display='none'; document.getElementById('collapse-expand-btn').classList.remove('open');">
                 <i class="fas fa-ellipsis-h"></i>
             </button>
             
