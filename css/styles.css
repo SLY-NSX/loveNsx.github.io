@@ -10835,11 +10835,18 @@
 /* === 手机端强制精简底部栏 === */
 @media (max-width: 768px) {
     /* 隐藏原来散落在外面的图片、表情、继续说、批量按钮 */
+    /* 注意：千万不要用 display:none !important，会导致 JS 获取不到元素而报错瘫痪 */
     .attachment-btn,
     .combo-btn,
     .continue-btn,
     .batch-btn {
-        display: none !important;
+        opacity: 0;
+        position: absolute;
+        pointer-events: none;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        left: -9999px;
     }
     /* 强制显示＋号 */
     #collapse-expand-btn {
