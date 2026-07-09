@@ -10870,18 +10870,17 @@
 
 /* 6. 手机端精简底部栏：改用维度塌陷，不用 display:none 避免点击失效 */
 @media (max-width: 768px) {
-    body:not(.bottom-collapse-mode) .collapse-hideable {
-        opacity: 0;
-        pointer-events: none;
+    body:not(.bottom-collapse-mode) .collapse-hideable,
+    body.bottom-collapse-mode .collapse-hideable {
+        opacity: 0 !important;
         width: 0 !important;
         height: 0 !important;
         padding: 0 !important;
         margin: 0 !important;
-        overflow: hidden;
-        border: none !important;
-    }
-    body.bottom-collapse-mode .collapse-hideable {
-        display: none !important;
+        border: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+        left: -9999px !important; /* 用移出屏幕代替 display:none，确保 .click() 生效 */
     }
     #collapse-expand-btn {
         display: flex !important;
