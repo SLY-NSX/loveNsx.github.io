@@ -636,7 +636,8 @@ function showEmojiTab() {
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
                 if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
-                window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; simulateReply(); }, randomDelay);
+                // 【修改点3】替换为安全的任务请求器
+                window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
             }
             document.getElementById('user-sticker-picker').classList.remove('active');
         };
@@ -692,7 +693,8 @@ function showPokeTab() {
             document.getElementById('user-sticker-picker').classList.remove('active');
             const delayRange = settings.replyDelayMax - settings.replyDelayMin;
             const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-            setTimeout(simulateReply, randomDelay);
+            // 【修改点4】替换为安全的任务请求器
+            setTimeout(() => window.requestSimulateTask(false), randomDelay);
         };
         area.appendChild(btn);
     });
@@ -910,7 +912,8 @@ function showPokeTab() {
                             updateReplyPreview();
                             const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                             const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-                            setTimeout(simulateReply, randomDelay);
+                            // 【修改点2】替换为安全的任务请求器
+                            setTimeout(() => window.requestSimulateTask(false), randomDelay);
 
 
                             closeModal();
@@ -975,8 +978,14 @@ function showPokeTab() {
                     }
                 }
             });
-
-            DOMElements.continueBtn.addEventListener('click', simulateReply);
+            // 【修改点1】将 simulateReply 替换为安全调用 simulateReplyInternal
+            DOMElements.continueBtn.addEventListener('click', () => {
+                if (typeof window.requestSimulateTask === 'function') {
+                    window.requestSimulateTask(false);
+                } else if (typeof simulateReplyInternal === 'function') {
+                    simulateReplyInternal(false);
+                }
+            });
             DOMElements.batchBtn.addEventListener('click', toggleBatchMode);
         }
 

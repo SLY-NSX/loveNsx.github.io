@@ -202,7 +202,8 @@ if (target.classList.contains('delete-btn')) {
                 DOMElements.pokeModal.input.value = '';
                 const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                 const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-                setTimeout(simulateReply, randomDelay);
+                // 替换为安全的任务请求器
+                setTimeout(() => window.requestSimulateTask(false), randomDelay);
             });
 
 
@@ -3156,13 +3157,12 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
                 }
             });
 
-            // 修改为安全调用
+            // 替换为安全的任务请求器
             DOMElements.continueBtn.addEventListener('click', () => {
-                if (typeof simulateReply === 'function') {
-                    simulateReply();
-                } else {
-                    console.warn('simulateReply 函数未找到，请检查是否被误删或作用域隔离');
-                    showNotification('继续说功能暂时不可用', 'error');
+                if (typeof window.requestSimulateTask === 'function') {
+                    window.requestSimulateTask(false);
+                } else if (typeof simulateReplyInternal === 'function') {
+                    simulateReplyInternal(false);
                 }
             });
             DOMElements.batchBtn.addEventListener('click', toggleBatchMode);
@@ -3207,6 +3207,8 @@ window.toggleCollapsedExtras = function() {
             extra.addEventListener('click', (e) => { e.stopPropagation(); primary.click(); });
         }
     }
+    wireExtra('combo-btn-extra', 'combo-btn');
+    wireExtra('batch-btn-extra', 'batch-btn');
 };
 
 window.exitCollapseMode = function() {
