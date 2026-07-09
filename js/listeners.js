@@ -3199,7 +3199,6 @@ window.toggleCollapsedExtras = function() {
             extra.addEventListener('click', (e) => { e.stopPropagation(); primary.click(); });
         }
     }
-    wireExtra('combo-btn-extra', 'combo-btn');
     wireExtra('batch-btn-extra', 'batch-btn');
 };
 
