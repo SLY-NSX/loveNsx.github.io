@@ -10893,3 +10893,55 @@
     z-index: 2001 !important;
 }
 
+/* ---- 电话未接回复菜单美化 ---- */
+#call-reply-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(245, 245, 245, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    padding: 8px;
+    z-index: 99999;
+    display: none; /* 默认隐藏 */
+    flex-direction: column;
+    gap: 6px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+    box-sizing: border-box;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* 适配底部小黑条 */
+}
+
+/* 当JS设置 display: flex 时，触发滑入动画 */
+#call-reply-menu[style*="display: flex"] {
+    transform: translateY(0);
+}
+
+#call-reply-menu button {
+    width: 100%;
+    padding: 16px 10px;
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #000;
+    text-align: center;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+#call-reply-menu button:active {
+    background: #e5e5e5;
+    transform: scale(0.98);
+}
+
+/* 如果有3个选项，中间加一点间隔感 */
+#call-reply-menu button:nth-child(2) {
+    margin: 4px 0;
+}
