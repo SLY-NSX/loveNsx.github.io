@@ -1102,39 +1102,50 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'message-content-wrapper';
 
-    if (groupMember && groupChatSettings.showName) {
-        const nameLabel = document.createElement('div');
-        nameLabel.className = 'group-sender-name';
-        nameLabel.textContent = groupMember.name;
-        const isSameSenderGroupForName = lastSenderRef.current === 'group_' + groupMember.name;
-        if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
-    } else if (!groupMember && msg.sender !== 'user' && msg.sender !== null && (settings.showPartnerNameInChat || showPartnerNameInChat)) {
-        const isSameSenderForName = lastSenderRef.current === msg.sender;
-        if (!isSameSenderForName) {
+    // 【防崩溃网1】加安全判断，防止群聊配置未加载引发全盘崩溃
+    try {
+        if (groupMember && typeof groupChatSettings !== 'undefined' && groupChatSettings.showName) {
             const nameLabel = document.createElement('div');
             nameLabel.className = 'group-sender-name';
-            nameLabel.textContent = settings.partnerName || msg.sender || '对方';
-            contentWrapper.appendChild(nameLabel);
+            nameLabel.textContent = groupMember.name;
+            const isSameSenderGroupForName = lastSenderRef.current === 'group_' + groupMember.name;
+            if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
+        } else if (!groupMember && msg.sender !== 'user' && msg.sender !== null && (settings.showPartnerNameInChat || showPartnerNameInChat)) {
+            const isSameSenderForName = lastSenderRef.current === msg.sender;
+            if (!isSameSenderForName) {
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'group-sender-name';
+                nameLabel.textContent = settings.partnerName || msg.sender || '对方';
+                contentWrapper.appendChild(nameLabel);
+            }
         }
+    } catch(e) {
+        console.error('消息名称引用失败，已跳过防崩溃:', e);
     }
 
     // --- 构建消息内容 ---
     let messageHTML = '';
-    if (msg.type === 'call-status') {
-        // 通话状态消息样式
-        const icon = msg.callIcon || 'fa-phone';
-        messageHTML = `<div style="display:flex;align-items:center;gap:8px;white-space:nowrap;"><i class="fas ${icon}" style="opacity:0.75;"></i><span>${msg.text}</span></div>`;
-    } else {
-        // 普通文字图片消息
-        if (msg.replyTo) {
-            const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
-            const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-            messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+    // 【防崩溃网2】加 try-catch，防止大字符串或非法字符解析炸毁整个 DOM
+    try {
+        if (msg.type === 'call-status') {
+            // 通话状态消息样式
+            const icon = msg.callIcon || 'fa-phone';
+            messageHTML = `<div style="display:flex;align-items:center;gap:8px;white-space:nowrap;"><i class="fas ${icon}" style="opacity:0.75;"></i><span>${msg.text}</span></div>`;
+        } else {
+            // 普通文字图片消息
+            if (msg.replyTo) {
+                const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
+                const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
+                messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+            }
+            const isImageOnly = !msg.text && !!msg.image;
+            let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
+            if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
+            messageHTML += content;
         }
-        const isImageOnly = !msg.text && !!msg.image;
-        let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
-        if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
-        messageHTML += content;
+    } catch(e) {
+        console.error('单条消息HTML拼接崩溃:', e);
+        messageHTML = '<div>消息解析异常</div>';
     }
 
     const messageDiv = document.createElement('div');
