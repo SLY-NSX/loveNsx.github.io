@@ -749,7 +749,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         pill.style.right  = 'auto'; pill.style.bottom = 'auto';
     }
 
-    // 核心系统消息生成与长按交互绑定
+    // 核心系统消息生成与点击交互绑定
     function sendCallEvent(icon, label, detail, isInteractive) {
         if (typeof window._addCallEvent === 'function') {
             window._addCallEvent(icon, label, detail);
@@ -772,7 +772,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                     const el = messages[i];
                     if (el.textContent.trim() === label.trim() && !el.dataset.callInteractive) {
                         el.dataset.callInteractive = (label.includes('拒绝') ? 'reject' : 'missed');
-                        attachLongPress(el);
+                        attachClickEvent(el); // 改为绑定点击事件
                         break;
                     }
                 }
@@ -780,26 +780,23 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         }
     }
 
-    function attachLongPress(el) {
+    // 替代原先的长按，改为单击触发，并屏蔽系统长按菜单
+    function attachClickEvent(el) {
         if (!el) return;
-        let pressTimer = null;
-        const start = (e) => {
-            if (e.button && e.button !== 2) return; 
-            pressTimer = setTimeout(() => {
-                showReplyMenu(el);
-                pressTimer = null;
-            }, 400);
-        };
-        const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
         
-        el.addEventListener('touchstart', start, {passive: true});
-        el.addEventListener('touchend', cancel);
-        el.addEventListener('touchmove', cancel);
-        el.addEventListener('mousedown', start);
-        el.addEventListener('mouseup', cancel);
-        el.addEventListener('mouseleave', cancel);
+        // 彻底阻止手机浏览器的长按系统菜单（复制、粘贴等）
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            return false;
+        });
+        
+        // 阻止文字被选中
+        el.style.userSelect = 'none';
+        el.style.webkitUserSelect = 'none';
+        
+        // 绑定单击事件
+        el.addEventListener('click', (e) => {
             e.stopPropagation();
             showReplyMenu(el);
         });
@@ -836,11 +833,10 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             menu.appendChild(btn);
         });
         
-        const rect = anchorEl.getBoundingClientRect();
-        menu.style.left = Math.max(10, rect.left) + 'px';
-        let topPos = rect.top - 100;
-        if (topPos < 10) topPos = rect.bottom + 10;
-        menu.style.top = topPos + 'px';
+        // 改为底部弹出，不再计算顶部位置
+        menu.style.left = '0';
+        menu.style.top = 'auto'; 
+        menu.style.bottom = '0';
         menu.style.display = 'flex';
         
         const close = (ev) => {
