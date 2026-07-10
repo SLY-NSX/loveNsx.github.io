@@ -457,8 +457,8 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
         csToggle.classList.toggle('active', isOn);
         const csLabel = document.getElementById('call-sound-state-label');
         if (csLabel) csLabel.textContent = isOn ? '已开启' : '已关闭';
-        const cvRow = document.getElementById('call-volume-row');
-        if (cvRow) cvRow.style.opacity = isOn ? '1' : '0.5';
+        const csDetail = document.getElementById('call-sound-detail-section');
+        if (csDetail) csDetail.style.opacity = isOn ? '1' : '0.5';
     }
     const cvSlider = document.getElementById('call-volume-slider');
     const cvVal = document.getElementById('call-volume-value');
@@ -1147,8 +1147,8 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
                     callSoundToggle.classList.toggle('active', isOn);
                     const callSoundLabel = document.getElementById('call-sound-state-label');
                     if (callSoundLabel) callSoundLabel.textContent = isOn ? '已开启' : '已关闭';
-                    const callVolRow = document.getElementById('call-volume-row');
-                    if (callVolRow) callVolRow.style.opacity = isOn ? '1' : '0.5';
+                    const callSoundDetail = document.getElementById('call-sound-detail-section');
+                    if (callSoundDetail) callSoundDetail.style.opacity = isOn ? '1' : '0.5';
                     if (typeof settings !== 'undefined') {
                         settings.callSoundEnabled = isOn;
                         if (typeof throttledSaveData === 'function') throttledSaveData();
