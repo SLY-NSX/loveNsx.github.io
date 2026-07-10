@@ -983,9 +983,12 @@ function _scheduleNextAutoSend() {
 
 function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     const fragment = new DocumentFragment();
+    if (msg.type === 'call-event') msg.type = 'call-status'; // 兼容旧版数据
+
     const messageDate = new Date(msg.timestamp).toDateString();
     const prevDate = prevMsg ? new Date(prevMsg.timestamp).toDateString() : null;
 
+    // --- 日期与8分钟断点时间戳 ---
     if (messageDate !== prevDate) {
         const dateDivider = document.createElement('div');
         dateDivider.className = 'date-divider';
@@ -999,8 +1002,23 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         dateDivider.innerHTML = `<span>${displayDate}</span>`;
         fragment.appendChild(dateDivider);
         lastSenderRef.current = null;
+    } else if (settings.timeFormat !== 'off') {
+        // 如果同一天，检查是否相差8分钟以上
+        const currentTs = new Date(msg.timestamp).getTime();
+        const prevTs = prevMsg ? new Date(prevMsg.timestamp).getTime() : 0;
+        if (currentTs - prevTs > 8 * 60 * 1000) {
+            const timeDivider = document.createElement('div');
+            timeDivider.className = 'time-divider'; // 新的居中时间戳
+            const td = new Date(msg.timestamp);
+            const hh = String(td.getHours()).padStart(2, '0');
+            const mm = String(td.getMinutes()).padStart(2, '0');
+            timeDivider.innerHTML = `<span>${hh}:${mm}</span>`;
+            fragment.appendChild(timeDivider);
+            lastSenderRef.current = null; // 时间断点后强制显示头像
+        }
     }
 
+    // --- 拍一拍系统消息 ---
     if (msg.type === 'system') {
         const systemMsgDiv = document.createElement('div');
         systemMsgDiv.className = 'system-message';
@@ -1009,32 +1027,16 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         lastSenderRef.current = 'system';
         return fragment;
     }
-
-    if (msg.type === 'call-event') {
-        const callEvDiv = document.createElement('div');
-        callEvDiv.className = 'call-event-message';
-        callEvDiv.dataset.id = msg.id;
-        const icon = msg.callIcon || 'fa-video';
-        const isRejected = icon === 'fa-phone-slash';
-        const colorClass = isRejected ? 'call-event-pill--rejected' : 'call-event-pill--ended';
-        const detail = msg.callDetail ? `<span class="call-event-detail">${msg.callDetail}</span>` : '';
-        callEvDiv.innerHTML = `<div class="call-event-pill ${colorClass}"><i class="fas ${icon} call-event-icon"></i><span class="call-event-label">${msg.text.replace(/ · .*/, '')}</span>${detail}<button class="call-event-delete" title="删除" onclick="(function(btn){const id=btn.closest('[data-id]').dataset.id;const idx=messages.findIndex(m=>String(m.id)===String(id));if(idx>-1){messages.splice(idx,1);renderMessages();throttledSaveData();}})(this)"><i class="fas fa-times"></i></button></div>`;
-        fragment.appendChild(callEvDiv);
+    // --- 新增：通话原因回复作为居中系统消息渲染 ---
+    if (msg.type === 'call-status' && msg.sender === 'system') {
+        const sysHintDiv = document.createElement('div');
+        sysHintDiv.className = 'system-message'; // 复用系统消息的灰色居中样式
+        sysHintDiv.innerHTML = msg.text;
+        fragment.appendChild(sysHintDiv);
         lastSenderRef.current = 'system';
         return fragment;
     }
-
-    let showTimestamp = true;
-    if (settings.timeFormat === 'off') {
-        showTimestamp = false;
-    } else if (nextMsg) {
-        const currentTs = new Date(msg.timestamp).getTime();
-        const nextTs = new Date(nextMsg.timestamp).getTime();
-        if (nextMsg.sender === msg.sender && nextMsg.type !== 'system' && (nextTs - currentTs < 60000)) {
-            showTimestamp = false;
-        }
-    }
-
+    // --- 移除原本的 showTimestamp 判断，不再在气泡下方显示时间 ---
     let isLastInSenderGroup = true;
     if (nextMsg) {
         const currentTs = new Date(msg.timestamp).getTime();
@@ -1107,53 +1109,67 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         }
     }
 
+    // --- 构建消息内容 ---
     let messageHTML = '';
-    if (msg.replyTo) {
-        const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
-        const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-        messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+    if (msg.type === 'call-status') {
+        // 通话状态消息样式
+        const icon = msg.callIcon || 'fa-phone';
+        messageHTML = `<div style="display:flex;align-items:center;gap:8px;white-space:nowrap;"><i class="fas ${icon}" style="opacity:0.75;"></i><span>${msg.text}</span></div>`;
+    } else {
+        // 普通文字图片消息
+        if (msg.replyTo) {
+            const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
+            const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
+            messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+        }
+        const isImageOnly = !msg.text && !!msg.image;
+        let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
+        if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
+        messageHTML += content;
     }
 
-    const isImageOnly = !msg.text && !!msg.image;
-    let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
-    if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
-    messageHTML += content;
-
     const messageDiv = document.createElement('div');
-    if (isImageOnly) {
+    if (msg.type === 'call-status') {
+        messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle} call-status-bubble`;
+    } else if (isImageOnly) {
         messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} message-image-bubble-none`;
     } else {
         messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle}`;
     }
     messageDiv.innerHTML = messageHTML;
 
+    // --- 构建操作按钮（通话状态消息不显示常规按钮） ---
     let actionsHTML = '';
-    if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
-    const starIcon = msg.favorited ? 'fas fa-star' : 'far fa-star';
-    actionsHTML += `<button class="meta-action-btn favorite-action-btn ${msg.favorited ? 'favorited' : ''}" title="${msg.favorited ? '取消收藏' : '收藏'}"><i class="${starIcon}"></i></button>`;
-    actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i class="fas fa-trash-alt"></i></button>`;
+    if (msg.type !== 'call-status') {
+        if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
+        const starIcon = msg.favorited ? 'fas fa-star' : 'far fa-star';
+        actionsHTML += `<button class="meta-action-btn favorite-action-btn ${msg.favorited ? 'favorited' : ''}" title="${msg.favorited ? '取消收藏' : '收藏'}"><i class="${starIcon}"></i></button>`;
+        actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i class="fas fa-trash-alt"></i></button>`;
+    }
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'message-meta-actions';
     actionsDiv.innerHTML = actionsHTML;
 
-    let metaHTML = '';
-    if (showTimestamp) {
-        const ts = new Date(msg.timestamp);
-        let timeStr;
-        const fmt = settings.timeFormat || 'HH:mm';
-        if (fmt === 'HH:mm:ss') {
-            timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        } else if (fmt === 'h:mm AM/PM') {
-            timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        } else if (fmt === 'h:mm:ss AM/PM') {
-            timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-        } else {
-            timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        }
-        metaHTML += `<div class="timestamp">${timeStr}</div>`;
+    // --- 点击通话气泡触发回复菜单 ---
+    if (msg.type === 'call-status' && msg.isInteractive) {
+        messageDiv.style.cursor = 'pointer';
+        messageDiv.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof window.showCallReplyMenu === 'function') {
+                window.showCallReplyMenu(messageDiv);
+            }
+        });
+        // 阻止手机长按系统菜单
+        messageDiv.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); e.stopPropagation(); return false;
+        });
+        messageDiv.style.userSelect = 'none';
+        messageDiv.style.webkitUserSelect = 'none';
     }
 
-    if (msg.sender === 'user' && settings.readReceiptsEnabled && isLastInSenderGroup) {
+    let metaHTML = '';
+    // 仅普通消息在最后一条时显示已读未读，通话状态不显示
+    if (msg.type !== 'call-status' && msg.sender === 'user' && settings.readReceiptsEnabled && isLastInSenderGroup) {
         const rrStyle = settings.readReceiptStyle || 'icon';
         if (rrStyle === 'text') {
             if (msg.status === 'read') {
@@ -1167,24 +1183,21 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         }
     }
 
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'message-meta';
     if (metaHTML !== '') {
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'message-meta';
-        if (!showTimestamp && !metaHTML.includes('timestamp')) {
-            metaDiv.style.height = 'auto';
-            metaDiv.style.marginTop = '2px';
-            if (settings.inChatAvatarPosition !== 'top') {
-                avatarDiv.style.marginBottom = '18px';
-            }
-        } else {
-            if (settings.inChatAvatarPosition !== 'top') {
-                avatarDiv.style.marginBottom = '26px';
-            }
+        metaDiv.style.height = 'auto';
+        metaDiv.style.marginTop = '2px';
+        if (settings.inChatAvatarPosition !== 'top') {
+            avatarDiv.style.marginBottom = '12px';
         }
         metaDiv.innerHTML = metaHTML;
         contentWrapper.append(actionsDiv, messageDiv, metaDiv);
     } else {
         contentWrapper.append(actionsDiv, messageDiv);
+        if (settings.inChatAvatarPosition !== 'top') {
+            avatarDiv.style.marginBottom = '6px'; // 没有时间戳的气泡间距收紧
+        }
     }
     wrapper.appendChild(contentWrapper);
     fragment.appendChild(wrapper);
@@ -1309,21 +1322,20 @@ const addMessage = (message) => {
     throttledSaveData();
 };
 
-        window._addCallEvent = (icon, label, detail) => {
+        window._addCallEvent = (icon, label, detail, sender = 'system', isInteractive = false) => {
             // 注意：通话记录是即时事件，即使对方在打字也必须立刻显示，不能拦截！
-            // 只有 _triggerPartnerPoke 需要防撞锁。
-
             addMessage({
                 id: Date.now() + Math.random(),
-                sender: 'system',
+                sender: sender, // 谁挂断/未接听，消息就显示在哪一侧
                 text: label + (detail ? ' · ' + detail : ''),
                 timestamp: new Date(),
                 status: 'received',
-                type: 'call-event',
-                callIcon: icon || 'fa-video',
+                type: 'call-status', // 新类型，用于区分普通文字
+                callIcon: icon || 'fa-phone',
                 callDetail: detail || null,
                 favorited: false,
                 note: null,
+                isInteractive: isInteractive, // 是否允许点击弹出回复选项
             });
         };
 
