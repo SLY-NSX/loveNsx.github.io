@@ -749,7 +749,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         pill.style.right  = 'auto'; pill.style.bottom = 'auto';
     }
 
-    // 核心系统消息生成
+    // 核心系统消息生成与长按交互绑定
     function sendCallEvent(icon, label, detail, isInteractive) {
         if (typeof window._addCallEvent === 'function') {
             window._addCallEvent(icon, label, detail);
@@ -767,29 +767,12 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         if (isInteractive) {
             setTimeout(() => {
                 const chatContainer = document.getElementById('chat') || document.querySelector('.chat-body') || document.body;
-                // 扩大搜索范围，适配各种前端结构
-                const messages = chatContainer.querySelectorAll('[class*="mes"], [class*="system"], [class*="message"], [class*="event"], .text');
-                
+                const messages = chatContainer.querySelectorAll('[class*="mes"], [class*="system"], [class*="message"], [class*="event"]');
                 for (let i = messages.length - 1; i >= 0; i--) {
                     const el = messages[i];
-                    // 【关键修改1】：把严格相等 === 改成包含 includes，避免时间戳导致找不到
-                    if (el.textContent.includes(label) && !el.dataset.callInteractive) {
-                        el.dataset.callInteractive = (label.includes('拒绝') || label.includes('未接')) ? 'reject' : 'missed';
-                        
-                        // 【关键修改2】：直接绑定 click 事件，不再依赖不存在的 attachLongPress
-                        el.style.cursor = 'pointer'; // 鼠标放上去变成小手
-                        el.style.textDecoration = 'underline'; // 加个下划线提示可以点
-                        el.title = '点击查看通话详情';
-                        
-                        el.addEventListener('click', function(event) {
-                            event.stopPropagation(); // 防止点击穿透
-                            // 这里暂时弹个窗，证明点击生效了
-                            alert('✅ 点击生效！\n你点击了: ' + label + '\n接下来你可以把这里改成打开通话界面的代码。');
-                            
-                            // 比如：showIncomingCall(); 或者打开某个记录面板
-                        });
-                        
-                        console.log('✅ 成功为元素绑定了点击事件！元素:', el);
+                    if (el.textContent.trim() === label.trim() && !el.dataset.callInteractive) {
+                        el.dataset.callInteractive = (label.includes('拒绝') ? 'reject' : 'missed');
+                        attachLongPress(el);
                         break;
                     }
                 }
@@ -797,20 +780,36 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         }
     }
 
+    function attachLongPress(el) {
+        if (!el) return;
+        let pressTimer = null;
+        const start = (e) => {
+            if (e.button && e.button !== 2) return; 
+            pressTimer = setTimeout(() => {
+                showReplyMenu(el);
+                pressTimer = null;
+            }, 400);
+        };
+        const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+        
+        el.addEventListener('touchstart', start, {passive: true});
+        el.addEventListener('touchend', cancel);
+        el.addEventListener('touchmove', cancel);
+        el.addEventListener('mousedown', start);
+        el.addEventListener('mouseup', cancel);
+        el.addEventListener('mouseleave', cancel);
+        el.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showReplyMenu(el);
+        });
+    }
+
     function showReplyMenu(anchorEl) {
         let menu = document.getElementById('call-reply-menu');
         if (!menu) {
             menu = document.createElement('div');
             menu.id = 'call-reply-menu';
-            // 添加基础悬浮菜单样式
-            menu.style.position = 'fixed';
-            menu.style.background = '#ffffff';
-            menu.style.border = '1px solid #ddd';
-            menu.style.borderRadius = '8px';
-            menu.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
-            menu.style.padding = '5px';
-            menu.style.zIndex = '10000';
-            menu.style.display = 'none';
             document.body.appendChild(menu);
         }
         menu.innerHTML = '';
@@ -830,23 +829,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         options.forEach(optText => {
             const btn = document.createElement('button');
             btn.textContent = optText;
-            // 按钮样式
-            btn.style.display = 'block';
-            btn.style.width = '100%';
-            btn.style.padding = '8px 12px';
-            btn.style.margin = '2px 0';
-            btn.style.border = 'none';
-            btn.style.background = 'transparent';
-            btn.style.textAlign = 'left';
-            btn.style.borderRadius = '4px';
-            btn.style.cursor = 'pointer';
-            btn.style.fontSize = '14px';
-            
-            btn.onmouseenter = () => btn.style.background = '#f0f0f0';
-            btn.onmouseleave = () => btn.style.background = 'transparent';
-            
-            btn.onclick = (e) => {
-                e.stopPropagation(); // 防止冒泡导致菜单刚点开就关闭
+            btn.onclick = () => {
                 sendCallEvent('', optText, null);
                 menu.style.display = 'none';
             };
@@ -859,7 +842,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         if (topPos < 10) topPos = rect.bottom + 10;
         menu.style.top = topPos + 'px';
         menu.style.display = 'flex';
-        menu.style.flexDirection = 'column';
         
         const close = (ev) => {
             if (!menu.contains(ev.target) && ev.target !== anchorEl) {
