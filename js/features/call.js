@@ -749,7 +749,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         pill.style.right  = 'auto'; pill.style.bottom = 'auto';
     }
 
-    // 核心系统消息生成与长按交互绑定
+    // 核心系统消息生成
     function sendCallEvent(icon, label, detail, isInteractive) {
         if (typeof window._addCallEvent === 'function') {
             window._addCallEvent(icon, label, detail);
@@ -763,6 +763,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 if (++tries > 25) clearInterval(t);
             }, 200);
         }
+    }
 
         if (isInteractive) {
             setTimeout(() => {
@@ -780,36 +781,20 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         }
     }
 
-    function attachLongPress(el) {
-        if (!el) return;
-        let pressTimer = null;
-        const start = (e) => {
-            if (e.button && e.button !== 2) return; 
-            pressTimer = setTimeout(() => {
-                showReplyMenu(el);
-                pressTimer = null;
-            }, 400);
-        };
-        const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
-        
-        el.addEventListener('touchstart', start, {passive: true});
-        el.addEventListener('touchend', cancel);
-        el.addEventListener('touchmove', cancel);
-        el.addEventListener('mousedown', start);
-        el.addEventListener('mouseup', cancel);
-        el.addEventListener('mouseleave', cancel);
-        el.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showReplyMenu(el);
-        });
-    }
-
     function showReplyMenu(anchorEl) {
         let menu = document.getElementById('call-reply-menu');
         if (!menu) {
             menu = document.createElement('div');
             menu.id = 'call-reply-menu';
+            // 添加基础悬浮菜单样式
+            menu.style.position = 'fixed';
+            menu.style.background = '#ffffff';
+            menu.style.border = '1px solid #ddd';
+            menu.style.borderRadius = '8px';
+            menu.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+            menu.style.padding = '5px';
+            menu.style.zIndex = '10000';
+            menu.style.display = 'none';
             document.body.appendChild(menu);
         }
         menu.innerHTML = '';
@@ -829,7 +814,23 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         options.forEach(optText => {
             const btn = document.createElement('button');
             btn.textContent = optText;
-            btn.onclick = () => {
+            // 按钮样式
+            btn.style.display = 'block';
+            btn.style.width = '100%';
+            btn.style.padding = '8px 12px';
+            btn.style.margin = '2px 0';
+            btn.style.border = 'none';
+            btn.style.background = 'transparent';
+            btn.style.textAlign = 'left';
+            btn.style.borderRadius = '4px';
+            btn.style.cursor = 'pointer';
+            btn.style.fontSize = '14px';
+            
+            btn.onmouseenter = () => btn.style.background = '#f0f0f0';
+            btn.onmouseleave = () => btn.style.background = 'transparent';
+            
+            btn.onclick = (e) => {
+                e.stopPropagation(); // 防止冒泡导致菜单刚点开就关闭
                 sendCallEvent('', optText, null);
                 menu.style.display = 'none';
             };
@@ -842,6 +843,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         if (topPos < 10) topPos = rect.bottom + 10;
         menu.style.top = topPos + 'px';
         menu.style.display = 'flex';
+        menu.style.flexDirection = 'column';
         
         const close = (ev) => {
             if (!menu.contains(ev.target) && ev.target !== anchorEl) {
