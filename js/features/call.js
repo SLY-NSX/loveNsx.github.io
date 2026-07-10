@@ -166,7 +166,8 @@
             if (!synthesizers[preset]) return;
             const ctx = _getCtx();
             const out = ctx.createGain();
-            out.gain.value = vol; // 合成音可以直接放大，不怕爆音
+            // 合成音基础音量太小，乘以 3.0 进行强力补偿，并限制 4.0 上限防止严重破音
+            out.gain.value = Math.min(vol * 3.0, 4.0); 
             out.connect(ctx.destination);
             synthesizers[preset](ctx, out);
         }
