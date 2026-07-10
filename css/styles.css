@@ -10893,30 +10893,31 @@
     z-index: 2001 !important;
 }
 
-/* ---- 电话未接回复菜单美化 ---- */
+/* ---- 电话未接回复菜单美化（自适应昼夜模式） ---- */
 #call-reply-menu {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: rgba(245, 245, 245, 0.92);
+    /* 使用网页自带的变量，自动适配深浅色模式 */
+    background: var(--SmartThemeBlurTintColor, rgba(200, 200, 200, 0.85));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--SmartThemeBorderColor, rgba(0,0,0,0.1));
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
     padding: 8px;
     z-index: 99999;
-    display: none; /* 默认隐藏 */
+    display: none;
     flex-direction: column;
     gap: 6px;
     transform: translateY(100%);
     transition: transform 0.3s ease-out;
     box-sizing: border-box;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* 适配底部小黑条 */
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
 }
 
-/* 当JS设置 display: flex 时，触发滑入动画 */
 #call-reply-menu[style*="display: flex"] {
     transform: translateY(0);
 }
@@ -10924,24 +10925,35 @@
 #call-reply-menu button {
     width: 100%;
     padding: 16px 10px;
-    background: #fff;
-    border: none;
+    /* 背景使用与网页主题协调的半透明色 */
+    background: var(--white70a, rgba(255, 255, 255, 0.9)); 
+    border: 1px solid var(--white30a, rgba(255, 255, 255, 0.3));
     border-radius: 12px;
+    /* 文字颜色直接取网页默认文字颜色，完美适应深浅模式 */
+    color: var(--SmartThemeBodyColor, #000); 
     font-size: 16px;
-    color: #000;
     text-align: center;
     cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--mainFontFamily, -apple-system, sans-serif);
     transition: background 0.15s, transform 0.1s;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
+/* 深色模式下的适配：如果是深色背景，按钮变暗一点 */
+body.theme_dark #call-reply-menu button,
+body.dark #call-reply-menu button,
+:root.dark #call-reply-menu button {
+    background: rgba(50, 50, 50, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+}
+
+/* 按下时的反馈 */
 #call-reply-menu button:active {
-    background: #e5e5e5;
+    filter: brightness(0.85);
     transform: scale(0.98);
 }
 
-/* 如果有3个选项，中间加一点间隔感 */
+/* 中间选项加一点间隔 */
 #call-reply-menu button:nth-child(2) {
     margin: 4px 0;
 }
