@@ -10893,13 +10893,13 @@
     z-index: 2001 !important;
 }
 
-/* ---- 电话未接回复菜单美化（强制覆盖版） ---- */
+/* ---- 电话未接回复菜单美化（修正版，不锁死弹出） ---- */
 #call-reply-menu {
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    /* 强制使用网页次级背景色，防止被内联样式写死成黑色 */
+    /* 强制使用网页次级背景色，防止被写死成黑色 */
     background-color: var(--secondary-bg) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
@@ -10909,7 +10909,8 @@
     box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
     padding: 8px !important;
     z-index: 99999 !important;
-    display: none !important;
+    /* 这里的 !important 去掉了，让 JS 能控制弹出 */
+    display: none;
     flex-direction: column !important;
     gap: 6px !important;
     transform: translateY(100%) !important;
@@ -10945,5 +10946,4 @@
 
 #call-reply-menu button:nth-child(2) {
     margin: 4px 0 !important;
-}
 }
