@@ -768,11 +768,19 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             setTimeout(() => {
                 const chatContainer = document.getElementById('chat') || document.querySelector('.chat-body') || document.body;
                 const messages = chatContainer.querySelectorAll('[class*="mes"], [class*="system"], [class*="message"], [class*="event"]');
+                
+                console.log('--- 电话事件测试 ---');
+                console.log('正在寻找的标签:', `"${label}"`);
+                console.log('页面找到的所有相关元素:', messages);
+                
                 for (let i = messages.length - 1; i >= 0; i--) {
                     const el = messages[i];
+                    console.log('第', i, '个元素的文本是:', `"${el.textContent.trim()}"`); // 看看实际抓到的文本长啥样
+                    
                     if (el.textContent.trim() === label.trim() && !el.dataset.callInteractive) {
                         el.dataset.callInteractive = (label.includes('拒绝') ? 'reject' : 'missed');
                         attachLongPress(el);
+                        console.log('✅ 成功匹配并绑定了事件！');
                         break;
                     }
                 }
