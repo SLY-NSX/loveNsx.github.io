@@ -450,9 +450,22 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
     const svSlider = document.getElementById('sound-volume-slider');
     const svVal = document.getElementById('sound-volume-value');
     if (svSlider) { svSlider.value = Math.round((settings.soundVolume || 0.15) * 100); if (svVal) svVal.textContent = svSlider.value + '%'; }
+    // --- 通话音效初始化 ---
+    const csToggle = document.getElementById('call-sound-toggle');
+    if (csToggle) {
+        const isOn = (typeof settings !== 'undefined' && settings.callSoundEnabled !== undefined) ? settings.callSoundEnabled : true;
+        csToggle.classList.toggle('active', isOn);
+        const csLabel = document.getElementById('call-sound-state-label');
+        if (csLabel) csLabel.textContent = isOn ? '已开启' : '已关闭';
+        const cvRow = document.getElementById('call-volume-row');
+        if (cvRow) cvRow.style.opacity = isOn ? '1' : '0.5';
+    }
     const cvSlider = document.getElementById('call-volume-slider');
     const cvVal = document.getElementById('call-volume-value');
-    if (cvSlider) { cvSlider.value = Math.round((settings.callVolume !== undefined ? settings.callVolume : 0.3) * 100); if (cvVal) cvVal.textContent = cvSlider.value + '%'; }
+    if (cvSlider) { 
+        cvSlider.value = Math.round((settings.callVolume !== undefined ? settings.callVolume : 0.3) * 100); 
+        if (cvVal) cvVal.textContent = cvSlider.value + '%'; 
+    }
     const legacyCustom = (settings.customSoundUrl || '').trim();
 
     const setSelect = (id, val) => {
@@ -1126,10 +1139,29 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
                 });
                 soundVolSlider.addEventListener('change', throttledSaveData);
             }
+            // --- 通话音效总开关事件 ---
+            const callSoundToggle = document.getElementById('call-sound-toggle');
+            if (callSoundToggle) {
+                callSoundToggle.addEventListener('click', () => {
+                    const isOn = !callSoundToggle.classList.contains('active');
+                    callSoundToggle.classList.toggle('active', isOn);
+                    const callSoundLabel = document.getElementById('call-sound-state-label');
+                    if (callSoundLabel) callSoundLabel.textContent = isOn ? '已开启' : '已关闭';
+                    const callVolRow = document.getElementById('call-volume-row');
+                    if (callVolRow) callVolRow.style.opacity = isOn ? '1' : '0.5';
+                    if (typeof settings !== 'undefined') {
+                        settings.callSoundEnabled = isOn;
+                        if (typeof throttledSaveData === 'function') throttledSaveData();
+                    }
+                });
+            }
+
+            // --- 通话音量滑块事件 (支持200%) ---
             const callVolSlider = document.getElementById('call-volume-slider');
             const callVolVal = document.getElementById('call-volume-value');
             if (callVolSlider) {
-                callVolSlider.value = Math.round((settings.callVolume !== undefined ? settings.callVolume : 0.3) * 100);
+                const initVol = settings.callVolume !== undefined ? settings.callVolume : 0.3;
+                callVolSlider.value = Math.round(initVol * 100);
                 if (callVolVal) callVolVal.textContent = callVolSlider.value + '%';
                 callVolSlider.addEventListener('input', (e) => {
                     settings.callVolume = parseInt(e.target.value) / 100;
