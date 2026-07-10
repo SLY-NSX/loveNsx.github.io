@@ -1051,7 +1051,6 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     wrapper.dataset.id = msg.id;
     wrapper.dataset.msgId = msg.id;
 
-    // 【修复】必须在此处声明 groupMember 变量，否则下方代码会崩溃
     const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
 
     const avatarDiv = document.createElement('div');
@@ -1060,35 +1059,43 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         avatarDiv.style.marginTop = settings.inChatAvatarCustomOffset + 'px';
     }
 
-    // 【修复】补全头像生成逻辑，否则所有头像都会消失
-    if (settings.inChatAvatarEnabled) {
-        const isSameSenderGroup = groupMember && lastSenderRef.current === 'group_' + (groupMember ? groupMember.name : '');
-        const isSameSenderNormal = !groupMember && msg.sender === lastSenderRef.current;
-        const shouldHide = !settings.alwaysShowAvatar && (isSameSenderGroup || isSameSenderNormal);
-        if (shouldHide) {
-            avatarDiv.classList.add('hidden');
-        } else if (groupMember) {
-            const groupAvatarShape = settings.partnerAvatarShape || 'circle';
-            ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
-            if (groupAvatarShape !== 'none') avatarDiv.classList.add('shape-' + groupAvatarShape);
-            if (groupMember.avatar) {
-                avatarDiv.innerHTML = `<img src="${groupMember.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
+    // 【健壮性强化】加 try-catch 和 typeof 判断，防止因缺乏某函数导致整个聊天渲染崩溃
+    try {
+        if (settings.inChatAvatarEnabled) {
+            const isSameSenderGroup = groupMember && lastSenderRef.current === 'group_' + (groupMember ? groupMember.name : '');
+            const isSameSenderNormal = !groupMember && msg.sender === lastSenderRef.current;
+            const shouldHide = !settings.alwaysShowAvatar && (isSameSenderGroup || isSameSenderNormal);
+            if (shouldHide) {
+                avatarDiv.classList.add('hidden');
+            } else if (groupMember) {
+                const groupAvatarShape = settings.partnerAvatarShape || 'circle';
+                ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
+                if (groupAvatarShape !== 'none') avatarDiv.classList.add('shape-' + groupAvatarShape);
+                if (groupMember.avatar) {
+                    avatarDiv.innerHTML = `<img src="${groupMember.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
+                } else {
+                    const initials = (groupMember.name || '?').charAt(0).toUpperCase();
+                    avatarDiv.innerHTML = `<div style="width:100%;height:100%;background:var(--accent-color);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">${initials}</div>`;
+                }
             } else {
-                const initials = (groupMember.name || '?').charAt(0).toUpperCase();
-                avatarDiv.innerHTML = `<div style="width:100%;height:100%;background:var(--accent-color);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">${initials}</div>`;
+                const isUser = msg.sender === 'user';
+                const avatarElement = isUser ? DOMElements.me.avatar : DOMElements.partner.avatar;
+                const frameSettings = isUser ? settings.myAvatarFrame : settings.partnerAvatarFrame;
+                const avatarShape = isUser ? (settings.myAvatarShape || 'circle') : (settings.partnerAvatarShape || 'circle');
+                if (avatarElement) avatarDiv.innerHTML = avatarElement.innerHTML;
+                // 安全调用 applyAvatarFrame，防止未定义报错
+                if (typeof applyAvatarFrame === 'function') {
+                    applyAvatarFrame(avatarDiv, frameSettings);
+                }
+                ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
+                if (avatarShape !== 'none') avatarDiv.classList.add('shape-' + avatarShape);
             }
         } else {
-            const isUser = msg.sender === 'user';
-            const avatarElement = isUser ? DOMElements.me.avatar : DOMElements.partner.avatar;
-            const frameSettings = isUser ? settings.myAvatarFrame : settings.partnerAvatarFrame;
-            const avatarShape = isUser ? (settings.myAvatarShape || 'circle') : (settings.partnerAvatarShape || 'circle');
-            avatarDiv.innerHTML = avatarElement.innerHTML;
-            applyAvatarFrame(avatarDiv, frameSettings);
-            ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
-            if (avatarShape !== 'none') avatarDiv.classList.add('shape-' + avatarShape);
+            avatarDiv.style.display = 'none';
         }
-    } else {
-        avatarDiv.style.display = 'none';
+    } catch (e) {
+        console.error('头像渲染失败，已跳过防崩溃:', e);
+        avatarDiv.style.display = 'none'; // 即使出错也只是不显示头像，不会让整个聊天崩溃
     }
     wrapper.appendChild(avatarDiv);
 
