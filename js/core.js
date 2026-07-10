@@ -983,12 +983,9 @@ function _scheduleNextAutoSend() {
 
 function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     const fragment = new DocumentFragment();
-    if (msg.type === 'call-event') msg.type = 'call-status'; // 兼容旧版数据
-
     const messageDate = new Date(msg.timestamp).toDateString();
     const prevDate = prevMsg ? new Date(prevMsg.timestamp).toDateString() : null;
 
-    // --- 日期与8分钟断点时间戳 ---
     if (messageDate !== prevDate) {
         const dateDivider = document.createElement('div');
         dateDivider.className = 'date-divider';
@@ -1002,23 +999,8 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         dateDivider.innerHTML = `<span>${displayDate}</span>`;
         fragment.appendChild(dateDivider);
         lastSenderRef.current = null;
-    } else if (settings.timeFormat !== 'off') {
-        // 如果同一天，检查是否相差8分钟以上
-        const currentTs = new Date(msg.timestamp).getTime();
-        const prevTs = prevMsg ? new Date(prevMsg.timestamp).getTime() : 0;
-        if (currentTs - prevTs > 8 * 60 * 1000) {
-            const timeDivider = document.createElement('div');
-            timeDivider.className = 'time-divider'; // 新的居中时间戳
-            const td = new Date(msg.timestamp);
-            const hh = String(td.getHours()).padStart(2, '0');
-            const mm = String(td.getMinutes()).padStart(2, '0');
-            timeDivider.innerHTML = `<span>${hh}:${mm}</span>`;
-            fragment.appendChild(timeDivider);
-            lastSenderRef.current = null; // 时间断点后强制显示头像
-        }
     }
 
-    // --- 拍一拍系统消息 ---
     if (msg.type === 'system') {
         const systemMsgDiv = document.createElement('div');
         systemMsgDiv.className = 'system-message';
@@ -1027,16 +1009,32 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         lastSenderRef.current = 'system';
         return fragment;
     }
-    // --- 新增：通话原因回复作为居中系统消息渲染 ---
-    if (msg.type === 'call-status' && msg.sender === 'system') {
-        const sysHintDiv = document.createElement('div');
-        sysHintDiv.className = 'system-message'; // 复用系统消息的灰色居中样式
-        sysHintDiv.innerHTML = msg.text;
-        fragment.appendChild(sysHintDiv);
+
+    if (msg.type === 'call-event') {
+        const callEvDiv = document.createElement('div');
+        callEvDiv.className = 'call-event-message';
+        callEvDiv.dataset.id = msg.id;
+        const icon = msg.callIcon || 'fa-video';
+        const isRejected = icon === 'fa-phone-slash';
+        const colorClass = isRejected ? 'call-event-pill--rejected' : 'call-event-pill--ended';
+        const detail = msg.callDetail ? `<span class="call-event-detail">${msg.callDetail}</span>` : '';
+        callEvDiv.innerHTML = `<div class="call-event-pill ${colorClass}"><i class="fas ${icon} call-event-icon"></i><span class="call-event-label">${msg.text.replace(/ · .*/, '')}</span>${detail}<button class="call-event-delete" title="删除" onclick="(function(btn){const id=btn.closest('[data-id]').dataset.id;const idx=messages.findIndex(m=>String(m.id)===String(id));if(idx>-1){messages.splice(idx,1);renderMessages();throttledSaveData();}})(this)"><i class="fas fa-times"></i></button></div>`;
+        fragment.appendChild(callEvDiv);
         lastSenderRef.current = 'system';
         return fragment;
     }
-    // --- 移除原本的 showTimestamp 判断，不再在气泡下方显示时间 ---
+
+    let showTimestamp = true;
+    if (settings.timeFormat === 'off') {
+        showTimestamp = false;
+    } else if (nextMsg) {
+        const currentTs = new Date(msg.timestamp).getTime();
+        const nextTs = new Date(nextMsg.timestamp).getTime();
+        if (nextMsg.sender === msg.sender && nextMsg.type !== 'system' && (nextTs - currentTs < 60000)) {
+            showTimestamp = false;
+        }
+    }
+
     let isLastInSenderGroup = true;
     if (nextMsg) {
         const currentTs = new Date(msg.timestamp).getTime();
@@ -1051,145 +1049,111 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     wrapper.dataset.id = msg.id;
     wrapper.dataset.msgId = msg.id;
 
-    const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
-
     const avatarDiv = document.createElement('div');
     avatarDiv.className = 'message-avatar';
     if (settings.inChatAvatarPosition === 'custom' && settings.inChatAvatarCustomOffset !== undefined) {
         avatarDiv.style.marginTop = settings.inChatAvatarCustomOffset + 'px';
     }
 
-    // 【健壮性强化】加 try-catch 和 typeof 判断，防止因缺乏某函数导致整个聊天渲染崩溃
-    try {
-        if (settings.inChatAvatarEnabled) {
-            const isSameSenderGroup = groupMember && lastSenderRef.current === 'group_' + (groupMember ? groupMember.name : '');
-            const isSameSenderNormal = !groupMember && msg.sender === lastSenderRef.current;
-            const shouldHide = !settings.alwaysShowAvatar && (isSameSenderGroup || isSameSenderNormal);
-            if (shouldHide) {
-                avatarDiv.classList.add('hidden');
-            } else if (groupMember) {
-                const groupAvatarShape = settings.partnerAvatarShape || 'circle';
-                ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
-                if (groupAvatarShape !== 'none') avatarDiv.classList.add('shape-' + groupAvatarShape);
-                if (groupMember.avatar) {
-                    avatarDiv.innerHTML = `<img src="${groupMember.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
-                } else {
-                    const initials = (groupMember.name || '?').charAt(0).toUpperCase();
-                    avatarDiv.innerHTML = `<div style="width:100%;height:100%;background:var(--accent-color);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">${initials}</div>`;
-                }
+    const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
+
+    if (settings.inChatAvatarEnabled) {
+        const isSameSenderGroup = groupMember && lastSenderRef.current === 'group_' + (groupMember ? groupMember.name : '');
+        const isSameSenderNormal = !groupMember && msg.sender === lastSenderRef.current;
+        const shouldHide = !settings.alwaysShowAvatar && (isSameSenderGroup || isSameSenderNormal);
+        if (shouldHide) {
+            avatarDiv.classList.add('hidden');
+        } else if (groupMember) {
+            const groupAvatarShape = settings.partnerAvatarShape || 'circle';
+            ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
+            if (groupAvatarShape !== 'none') avatarDiv.classList.add('shape-' + groupAvatarShape);
+            if (groupMember.avatar) {
+                avatarDiv.innerHTML = `<img src="${groupMember.avatar}" style="width:100%;height:100%;object-fit:cover;">`;
             } else {
-                const isUser = msg.sender === 'user';
-                const avatarElement = isUser ? DOMElements.me.avatar : DOMElements.partner.avatar;
-                const frameSettings = isUser ? settings.myAvatarFrame : settings.partnerAvatarFrame;
-                const avatarShape = isUser ? (settings.myAvatarShape || 'circle') : (settings.partnerAvatarShape || 'circle');
-                if (avatarElement) avatarDiv.innerHTML = avatarElement.innerHTML;
-                // 安全调用 applyAvatarFrame，防止未定义报错
-                if (typeof applyAvatarFrame === 'function') {
-                    applyAvatarFrame(avatarDiv, frameSettings);
-                }
-                ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
-                if (avatarShape !== 'none') avatarDiv.classList.add('shape-' + avatarShape);
+                const initials = (groupMember.name || '?').charAt(0).toUpperCase();
+                avatarDiv.innerHTML = `<div style="width:100%;height:100%;background:var(--accent-color);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">${initials}</div>`;
             }
         } else {
-            avatarDiv.style.display = 'none';
+            const isUser = msg.sender === 'user';
+            const avatarElement = isUser ? DOMElements.me.avatar : DOMElements.partner.avatar;
+            const frameSettings = isUser ? settings.myAvatarFrame : settings.partnerAvatarFrame;
+            const avatarShape = isUser ? (settings.myAvatarShape || 'circle') : (settings.partnerAvatarShape || 'circle');
+            avatarDiv.innerHTML = avatarElement.innerHTML;
+            applyAvatarFrame(avatarDiv, frameSettings);
+            ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
+            if (avatarShape !== 'none') avatarDiv.classList.add('shape-' + avatarShape);
         }
-    } catch (e) {
-        console.error('头像渲染失败，已跳过防崩溃:', e);
-        avatarDiv.style.display = 'none'; // 即使出错也只是不显示头像，不会让整个聊天崩溃
+    } else {
+        avatarDiv.style.display = 'none';
     }
     wrapper.appendChild(avatarDiv);
 
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'message-content-wrapper';
 
-    // 【防崩溃网1】加安全判断，防止群聊配置未加载引发全盘崩溃
-    try {
-        if (groupMember && typeof groupChatSettings !== 'undefined' && groupChatSettings.showName) {
+    if (groupMember && groupChatSettings.showName) {
+        const nameLabel = document.createElement('div');
+        nameLabel.className = 'group-sender-name';
+        nameLabel.textContent = groupMember.name;
+        const isSameSenderGroupForName = lastSenderRef.current === 'group_' + groupMember.name;
+        if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
+    } else if (!groupMember && msg.sender !== 'user' && msg.sender !== null && (settings.showPartnerNameInChat || showPartnerNameInChat)) {
+        const isSameSenderForName = lastSenderRef.current === msg.sender;
+        if (!isSameSenderForName) {
             const nameLabel = document.createElement('div');
             nameLabel.className = 'group-sender-name';
-            nameLabel.textContent = groupMember.name;
-            const isSameSenderGroupForName = lastSenderRef.current === 'group_' + groupMember.name;
-            if (!isSameSenderGroupForName) contentWrapper.appendChild(nameLabel);
-        } else if (!groupMember && msg.sender !== 'user' && msg.sender !== null && (settings.showPartnerNameInChat || showPartnerNameInChat)) {
-            const isSameSenderForName = lastSenderRef.current === msg.sender;
-            if (!isSameSenderForName) {
-                const nameLabel = document.createElement('div');
-                nameLabel.className = 'group-sender-name';
-                nameLabel.textContent = settings.partnerName || msg.sender || '对方';
-                contentWrapper.appendChild(nameLabel);
-            }
+            nameLabel.textContent = settings.partnerName || msg.sender || '对方';
+            contentWrapper.appendChild(nameLabel);
         }
-    } catch(e) {
-        console.error('消息名称引用失败，已跳过防崩溃:', e);
     }
 
-    // --- 构建消息内容 ---
     let messageHTML = '';
-    // 【防崩溃网2】加 try-catch，防止大字符串或非法字符解析炸毁整个 DOM
-    try {
-        if (msg.type === 'call-status') {
-            // 通话状态消息样式
-            const icon = msg.callIcon || 'fa-phone';
-            messageHTML = `<div style="display:flex;align-items:center;gap:8px;white-space:nowrap;"><i class="fas ${icon}" style="opacity:0.75;"></i><span>${msg.text}</span></div>`;
-        } else {
-            // 普通文字图片消息
-            if (msg.replyTo) {
-                const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
-                const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-                messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
-            }
-            const isImageOnly = !msg.text && !!msg.image;
-            let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
-            if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
-            messageHTML += content;
-        }
-    } catch(e) {
-        console.error('单条消息HTML拼接崩溃:', e);
-        messageHTML = '<div>消息解析异常</div>';
+    if (msg.replyTo) {
+        const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
+        const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
+        messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
     }
+
+    const isImageOnly = !msg.text && !!msg.image;
+    let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
+    if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
+    messageHTML += content;
 
     const messageDiv = document.createElement('div');
-    if (msg.type === 'call-status') {
-        messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle} call-status-bubble`;
-    } else if (isImageOnly) {
+    if (isImageOnly) {
         messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} message-image-bubble-none`;
     } else {
         messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle}`;
     }
     messageDiv.innerHTML = messageHTML;
 
-    // --- 构建操作按钮（通话状态消息不显示常规按钮） ---
     let actionsHTML = '';
-    if (msg.type !== 'call-status') {
-        if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
-        const starIcon = msg.favorited ? 'fas fa-star' : 'far fa-star';
-        actionsHTML += `<button class="meta-action-btn favorite-action-btn ${msg.favorited ? 'favorited' : ''}" title="${msg.favorited ? '取消收藏' : '收藏'}"><i class="${starIcon}"></i></button>`;
-        actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i class="fas fa-trash-alt"></i></button>`;
-    }
+    if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
+    const starIcon = msg.favorited ? 'fas fa-star' : 'far fa-star';
+    actionsHTML += `<button class="meta-action-btn favorite-action-btn ${msg.favorited ? 'favorited' : ''}" title="${msg.favorited ? '取消收藏' : '收藏'}"><i class="${starIcon}"></i></button>`;
+    actionsHTML += `<button class="meta-action-btn delete-btn" title="删除"><i class="fas fa-trash-alt"></i></button>`;
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'message-meta-actions';
     actionsDiv.innerHTML = actionsHTML;
 
-    // --- 点击通话气泡触发回复菜单 ---
-    if (msg.type === 'call-status' && msg.isInteractive) {
-        messageDiv.style.cursor = 'pointer';
-        messageDiv.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (typeof window.showCallReplyMenu === 'function') {
-                window.showCallReplyMenu(messageDiv);
-            }
-        });
-        // 阻止手机长按系统菜单
-        messageDiv.addEventListener('contextmenu', (e) => {
-            e.preventDefault(); e.stopPropagation(); return false;
-        });
-        messageDiv.style.userSelect = 'none';
-        messageDiv.style.webkitUserSelect = 'none';
+    let metaHTML = '';
+    if (showTimestamp) {
+        const ts = new Date(msg.timestamp);
+        let timeStr;
+        const fmt = settings.timeFormat || 'HH:mm';
+        if (fmt === 'HH:mm:ss') {
+            timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        } else if (fmt === 'h:mm AM/PM') {
+            timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        } else if (fmt === 'h:mm:ss AM/PM') {
+            timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+        } else {
+            timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+        metaHTML += `<div class="timestamp">${timeStr}</div>`;
     }
 
-    let metaHTML = '';
-    // 仅普通消息在最后一条时显示已读未读，通话状态不显示
-    if (msg.type !== 'call-status' && msg.sender === 'user' && settings.readReceiptsEnabled && isLastInSenderGroup) {
+    if (msg.sender === 'user' && settings.readReceiptsEnabled && isLastInSenderGroup) {
         const rrStyle = settings.readReceiptStyle || 'icon';
         if (rrStyle === 'text') {
             if (msg.status === 'read') {
@@ -1203,21 +1167,24 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         }
     }
 
-    const metaDiv = document.createElement('div');
-    metaDiv.className = 'message-meta';
     if (metaHTML !== '') {
-        metaDiv.style.height = 'auto';
-        metaDiv.style.marginTop = '2px';
-        if (settings.inChatAvatarPosition !== 'top') {
-            avatarDiv.style.marginBottom = '12px';
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'message-meta';
+        if (!showTimestamp && !metaHTML.includes('timestamp')) {
+            metaDiv.style.height = 'auto';
+            metaDiv.style.marginTop = '2px';
+            if (settings.inChatAvatarPosition !== 'top') {
+                avatarDiv.style.marginBottom = '18px';
+            }
+        } else {
+            if (settings.inChatAvatarPosition !== 'top') {
+                avatarDiv.style.marginBottom = '26px';
+            }
         }
         metaDiv.innerHTML = metaHTML;
         contentWrapper.append(actionsDiv, messageDiv, metaDiv);
     } else {
         contentWrapper.append(actionsDiv, messageDiv);
-        if (settings.inChatAvatarPosition !== 'top') {
-            avatarDiv.style.marginBottom = '6px'; // 没有时间戳的气泡间距收紧
-        }
     }
     wrapper.appendChild(contentWrapper);
     fragment.appendChild(wrapper);
@@ -1342,20 +1309,21 @@ const addMessage = (message) => {
     throttledSaveData();
 };
 
-        window._addCallEvent = (icon, label, detail, sender = 'system', isInteractive = false) => {
+        window._addCallEvent = (icon, label, detail) => {
             // 注意：通话记录是即时事件，即使对方在打字也必须立刻显示，不能拦截！
+            // 只有 _triggerPartnerPoke 需要防撞锁。
+
             addMessage({
                 id: Date.now() + Math.random(),
-                sender: sender, // 谁挂断/未接听，消息就显示在哪一侧
+                sender: 'system',
                 text: label + (detail ? ' · ' + detail : ''),
                 timestamp: new Date(),
                 status: 'received',
-                type: 'call-status', // 新类型，用于区分普通文字
-                callIcon: icon || 'fa-phone',
+                type: 'call-event',
+                callIcon: icon || 'fa-video',
                 callDetail: detail || null,
                 favorited: false,
                 note: null,
-                isInteractive: isInteractive, // 是否允许点击弹出回复选项
             });
         };
 
