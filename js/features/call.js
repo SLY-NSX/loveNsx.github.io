@@ -112,19 +112,29 @@
             }
         };
 
+        function _getCallVol() {
+            try {
+                if (typeof settings !== 'undefined' && typeof settings.callVolume === 'number') {
+                    return settings.callVolume;
+                }
+            } catch(e) {}
+            return 0.3; // 默认 30%
+        }
+
         function _play(preset, customUrl) {
             _stop();
+            const vol = _getCallVol();
             if (customUrl) {
                 _customAudioEl = new Audio(customUrl);
                 _customAudioEl.loop = true;
-                _customAudioEl.volume = 0.6;
+                _customAudioEl.volume = vol;
                 _customAudioEl.play().catch(()=>{});
                 return;
             }
             if (!synthesizers[preset]) return;
             const ctx = _getCtx();
             const out = ctx.createGain();
-            out.gain.value = 0.6; 
+            out.gain.value = vol; 
             out.connect(ctx.destination);
             synthesizers[preset](ctx, out);
         }
