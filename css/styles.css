@@ -10893,58 +10893,57 @@
     z-index: 2001 !important;
 }
 
-/* ---- 电话未接回复菜单美化（完美适配昼夜模式） ---- */
+/* ---- 电话未接回复菜单美化（强制覆盖版） ---- */
 #call-reply-menu {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    /* 使用你网页自带的次级背景色 */
-    background-color: var(--secondary-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border-color);
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-    padding: 8px;
-    z-index: 99999;
-    display: none;
-    flex-direction: column;
-    gap: 6px;
-    transform: translateY(100%);
-    transition: transform 0.3s ease-out;
-    box-sizing: border-box;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    /* 强制使用网页次级背景色，防止被内联样式写死成黑色 */
+    background-color: var(--secondary-bg) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid var(--border-color) !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
+    padding: 8px !important;
+    z-index: 99999 !important;
+    display: none !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    transform: translateY(100%) !important;
+    transition: transform 0.3s ease-out !important;
+    box-sizing: border-box !important;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
 }
 
 #call-reply-menu[style*="display: flex"] {
-    transform: translateY(0);
+    transform: translateY(0) !important;
 }
 
 #call-reply-menu button {
-    width: 100%;
-    padding: 16px 10px;
-    /* 按钮背景使用你的主背景色（白天是白，晚上是深灰） */
-    background-color: var(--primary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    /* 文字颜色使用你的主文字色 */
-    color: var(--text-primary); 
-    font-size: 16px;
-    text-align: center;
-    cursor: pointer;
-    font-family: var(--font-family);
-    transition: background-color 0.15s, transform 0.1s;
+    width: 100% !important;
+    padding: 16px 10px !important;
+    /* 强制按钮背景使用主背景色 */
+    background-color: var(--primary-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    /* 强制文字颜色跟随主题 */
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    font-family: var(--font-family) !important;
+    transition: background-color 0.15s, transform 0.1s !important;
 }
 
-/* 按下时的反馈 */
 #call-reply-menu button:active {
-    background-color: var(--border-color);
-    transform: scale(0.98);
+    background-color: var(--border-color) !important;
+    transform: scale(0.98) !important;
 }
 
-/* 中间选项加一点间隔 */
 #call-reply-menu button:nth-child(2) {
-    margin: 4px 0;
+    margin: 4px 0 !important;
+}
 }
