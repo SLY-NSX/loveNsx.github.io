@@ -371,13 +371,16 @@
     function _setUI(playing) {
         var dot = document.getElementById('keepalive-dot');
         var desc = document.getElementById('keepalive-audio-desc');
-        var sw = document.getElementById('keepalive-audio-switch');
         var row = document.getElementById('keepalive-bar-row');
-        var soundSw = document.getElementById('keepalive-sound-switch');
         var soundDesc = document.getElementById('keepalive-sound-desc');
 
-        if (sw) sw.classList.toggle('active', _get());
-        if (soundSw) soundSw.classList.toggle('active', _getSound());
+        // 修复：将 active 类名加在 .setting-pill-row 上，让全局变色和滑动动效生效
+        var audioToggleRow = document.getElementById('keepalive-audio-toggle');
+        if (audioToggleRow) audioToggleRow.classList.toggle('active', _get());
+        
+        var soundToggleRow = document.getElementById('keepalive-sound-toggle');
+        if (soundToggleRow) soundToggleRow.classList.toggle('active', _getSound());
+
         if (soundDesc) soundDesc.textContent = _getSound() ? '有声播放 (正常音量)' : '静音播放 (0%)';
         
         if (dot) dot.className = 'keepalive-dot' + (playing ? ' alive' : '');
@@ -561,94 +564,84 @@ window.renderComboContent = function(tabName) {
                 if (tab === 'poke') {
                     showPokeTab(contentArea);
                 } else {
-                    showEmojiTab(contentArea, tab); // 传入 'emoji' 或 'sticker'
+                    showEmojiTab(contentArea, tab === 'partner-sticker');
                 }
             });
         });
         picker._comboMenuInitialized = true;
     }
 
-    // 自动点击传入的 Tab，默认打开表情库
-    const targetBtn = picker.querySelector(`.combo-tab-btn[data-tab="${tabName || 'sticker'}"]`);
+    // 自动点击传入的 Tab
+    const targetBtn = picker.querySelector(`.combo-tab-btn[data-tab="${tabName || 'my-sticker'}"]`);
     if (targetBtn) targetBtn.click();
 };
 
-function showEmojiTab(area, type) {
+function showEmojiTab(area, isPartner) {
     area.innerHTML = '';
     area.style.display = 'grid';
     area.style.gridTemplateColumns = 'repeat(5, 1fr)';
     area.style.gap = '8px';
     
-    if (type === 'emoji') {
-        // 渲染 Emoji
-        CONSTANTS.REPLY_EMOJIS.forEach(emoji => {
-            const item = document.createElement('div');
-            item.className = 'picker-item';
-            item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
-            item.onclick = () => {
-                const input = document.getElementById('message-input');
-                input.value += emoji;
-                document.getElementById('user-sticker-picker').classList.remove('active');
-                input.focus();
-            };
-            area.appendChild(item);
-        });
+    CONSTANTS.REPLY_EMOJIS.forEach(emoji => {
+        const item = document.createElement('div');
+        item.className = 'picker-item';
+        item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
+        item.onclick = () => {
+            const input = document.getElementById('message-input');
+            input.value += emoji;
+            document.getElementById('user-sticker-picker').classList.remove('active');
+            input.focus();
+        };
+        area.appendChild(item);
+    });
 
-        const emojis = customEmojis || [];
-        emojis.forEach(emoji => {
-            const item = document.createElement('div');
-            item.className = 'picker-item';
-            item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
-            item.onclick = () => {
-                const input = document.getElementById('message-input');
-                input.value += emoji;
-                document.getElementById('user-sticker-picker').classList.remove('active');
-                input.focus();
-            };
-            area.appendChild(item);
-        });
-    } else if (type === 'sticker') {
-        // 渲染双方共享的表情库
-        const stickers = stickerLibrary || [];
-        if (stickers.length === 0) {
-            area.style.display = 'flex';
-            area.style.justifyContent = 'center';
-            area.style.alignItems = 'center';
-            area.innerHTML = '<div class="empty-sticker-tip"><i class="fas fa-image"></i><span>表情库为空<br>请点击右上角添加</span></div>';
-            return;
-        }
+    const emojis = customEmojis || [];
+    emojis.forEach(emoji => {
+        const item = document.createElement('div');
+        item.className = 'picker-item';
+        item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
+        item.onclick = () => {
+            const input = document.getElementById('message-input');
+            input.value += emoji;
+            document.getElementById('user-sticker-picker').classList.remove('active');
+            input.focus();
+        };
+        area.appendChild(item);
+    });
 
-        stickers.forEach(src => {
-            const item = document.createElement('div');
-            item.className = 'picker-item';
-            item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
-            item.onclick = () => {
-                if (isBatchMode) {
-                    batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
-                    updateBatchPreview();
-                    showNotification('已添加到批量发送', 'success', 1200);
-                } else {
-                    addMessage({
-                        id: Date.now(),
-                        sender: 'user', // 我发出的
-                        text: '',
-                        timestamp: new Date(),
-                        image: src,
-                        status: 'sent',
-                        type: 'normal'
-                    });
-                    playSound('send');
-                    
+    const stickers = isPartner ? (window.partnerStickerLibrary || []) : (myStickerLibrary || []);
+    stickers.forEach(src => {
+        const item = document.createElement('div');
+        item.className = 'picker-item';
+        item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
+        item.onclick = () => {
+            if (isBatchMode && !isPartner) {
+                batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
+                updateBatchPreview();
+                showNotification('已添加到批量发送', 'success', 1200);
+            } else {
+                addMessage({
+                    id: Date.now(),
+                    sender: isPartner ? (settings.partnerName || '对方') : 'user',
+                    text: '',
+                    timestamp: new Date(),
+                    image: src,
+                    status: isPartner ? 'received' : 'sent',
+                    type: 'normal'
+                });
+                playSound('send');
+                
+                if (!isPartner) {
                     const delayRange = settings.replyDelayMax - settings.replyDelayMin;
                     const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
                     if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
                     window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
                 }
-                document.getElementById('user-sticker-picker').classList.remove('active');
-            };
-            area.appendChild(item);
-        });
-    }
+            }
+            document.getElementById('user-sticker-picker').classList.remove('active');
+        };
+        area.appendChild(item);
+    });
 }
 
 function showPokeTab(area) {
@@ -656,75 +649,52 @@ function showPokeTab(area) {
     area.style.display = 'flex';
     area.style.flexDirection = 'column';
     area.style.gap = '8px';
-    area.style.overflowY = 'auto';
-
-    if (customPokes.length === 0) {
-        area.style.alignItems = 'center';
-        area.style.justifyContent = 'center';
-        area.innerHTML = '<div class="empty-sticker-tip"><i class="fas fa-hand-sparkles"></i><span>拍一拍库为空<br>请点击下方按钮添加</span></div>';
-    } else {
-        customPokes.forEach(pokeText => {
-            const cleanPokeText = (typeof window._sanitizePokeTextForDisplay === 'function')
-                ? window._sanitizePokeTextForDisplay(pokeText)
-                : pokeText;
-            
-            // 在按钮上展示时，把 + 换成 'Ta' 更好看
-            let displayText = cleanPokeText;
-            if (displayText.includes('+')) {
-                displayText = displayText.replace(/\+/g, 'Ta');
-            }
-            
-            const btn = document.createElement('button');
-            btn.textContent = displayText;
-            btn.style.cssText = `
-                padding: 10px 14px;
-                background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04));
-                border: 1px solid rgba(var(--accent-color-rgb),0.15);
-                border-radius: 12px;
-                cursor: pointer;
-                text-align: left;
-                font-size: 13px;
-                transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
-                color: var(--text-primary);
-                font-family: var(--font-family);
-                width: 100%;
-            `;
-            btn.addEventListener('mouseover', () => {
-                btn.style.background = 'linear-gradient(135deg, rgba(var(--accent-color-rgb),0.12), rgba(var(--accent-color-rgb),0.06))';
-                btn.style.borderColor = 'var(--accent-color)';
-                btn.style.transform = 'translateX(4px)';
-            });
-            btn.addEventListener('mouseout', () => {
-                btn.style.background = 'linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04))';
-                btn.style.borderColor = 'rgba(var(--accent-color-rgb),0.15)';
-                btn.style.transform = '';
-            });
-            btn.onclick = () => {
-                const partnerName = settings.partnerName || '梦角';
-                const myName = settings.myName || '我';
-                
-                let finalTextStr = cleanPokeText;
-                // 只处理带 + 的新格式，旧数据直接拼在名字后面
-                if (finalTextStr.includes('+')) {
-                    finalTextStr = finalTextStr.replace(/\+/g, partnerName);
-                } else {
-                    finalTextStr = finalTextStr + ' ' + partnerName;
-                }
-                
-                addMessage({
-                    id: Date.now(), 
-                    text: _formatPokeText(`${myName} ${finalTextStr}`), 
-                    timestamp: new Date(), 
-                    type: 'system'
-                });
-                document.getElementById('user-sticker-picker').classList.remove('active');
-                const delayRange = settings.replyDelayMax - settings.replyDelayMin;
-                const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-                setTimeout(() => window.requestSimulateTask(false), randomDelay);
-            };
-            area.appendChild(btn);
+    
+    const quickPokes = customPokes.slice(0, 6);
+    
+    quickPokes.forEach(pokeText => {
+        const cleanPokeText = (typeof window._sanitizePokeTextForDisplay === 'function')
+            ? window._sanitizePokeTextForDisplay(pokeText)
+            : pokeText;
+        const btn = document.createElement('button');
+        btn.textContent = cleanPokeText;
+        btn.style.cssText = `
+            padding: 10px 14px;
+            background: linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04));
+            border: 1px solid rgba(var(--accent-color-rgb),0.15);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 13px;
+            transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            width: 100%;
+        `;
+        btn.addEventListener('mouseover', () => {
+            btn.style.background = 'linear-gradient(135deg, rgba(var(--accent-color-rgb),0.12), rgba(var(--accent-color-rgb),0.06))';
+            btn.style.borderColor = 'var(--accent-color)';
+            btn.style.transform = 'translateX(4px)';
         });
-    }
+        btn.addEventListener('mouseout', () => {
+            btn.style.background = 'linear-gradient(135deg, var(--secondary-bg), rgba(var(--accent-color-rgb),0.04))';
+            btn.style.borderColor = 'rgba(var(--accent-color-rgb),0.15)';
+            btn.style.transform = '';
+        });
+        btn.onclick = () => {
+            addMessage({
+                id: Date.now(), 
+                text: _formatPokeText(`${settings.myName} ${cleanPokeText}`), 
+                timestamp: new Date(), 
+                type: 'system'
+            });
+            document.getElementById('user-sticker-picker').classList.remove('active');
+            const delayRange = settings.replyDelayMax - settings.replyDelayMin;
+            const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
+            setTimeout(() => window.requestSimulateTask(false), randomDelay);
+        };
+        area.appendChild(btn);
+    });
     
     const customBtn = document.createElement('button');
     customBtn.innerHTML = '<i class="fas fa-edit"></i> 自定义拍一拍';
@@ -744,79 +714,10 @@ function showPokeTab(area) {
     `;
     customBtn.onclick = () => {
         document.getElementById('user-sticker-picker').classList.remove('active');
-        if (typeof showModal === 'function' && DOMElements.pokeModal && DOMElements.pokeModal.modal) {
-            showModal(DOMElements.pokeModal.modal);
-        }
+        showModal(DOMElements.pokeModal.modal, DOMElements.pokeModal.input);
     };
     area.appendChild(customBtn);
 }
-
-// 全局拦截拍一拍的发送事件
-window._handlePokeSend = function() {
-    const inputA = document.getElementById('poke-input-a');
-    const inputB = document.getElementById('poke-input-b');
-    const saveCheckbox = document.getElementById('poke-save-to-library');
-    
-    const actionA = inputA.value.trim();
-    const suffixB = inputB.value.trim();
-    
-    if (!actionA) {
-        if (typeof showNotification === 'function') showNotification('请输入动作内容', 'warning');
-        return;
-    }
-    
-    // 拼接存储格式：如有后缀，中间用+分隔；无后缀，末尾补+，方便替换名字
-    let rawText = actionA;
-    if (suffixB) {
-        rawText += '+' + suffixB;
-    } else {
-        rawText += '+';
-    }
-    
-    // 发送操作：我是发起方
-    const partnerName = settings.partnerName || '梦角';
-    const myName = settings.myName || '我';
-    let myPokeText = rawText.replace(/\+/g, partnerName);
-    const fullText = `${myName} ${myPokeText}`;
-    
-    const formattedText = (typeof window._formatPokeText === 'function') 
-        ? window._formatPokeText(fullText) 
-        : fullText;
-    
-    addMessage({
-        id: Date.now,
-        text: formattedText,
-        timestamp: new Date(),
-        type: 'system'
-    });
-    
-    // 如果勾选了保存
-    if (saveCheckbox && saveCheckbox.checked) {
-        if (typeof customPokes !== 'undefined') {
-            customPokes.push(rawText); // 保存带 + 的原始文本
-            if (typeof saveData === 'function') saveData();
-            if (typeof renderReplyLibrary === 'function') renderReplyLibrary();
-        }
-    }
-    
-    // 清空并关闭
-    inputA.value = '';
-    inputB.value = '';
-    if (saveCheckbox) saveCheckbox.checked = false;
-    
-    if (typeof hideModal === 'function') {
-        hideModal(document.getElementById('poke-modal'));
-    }
-    
-    const delayRange = settings.replyDelayMax - settings.replyDelayMin;
-    const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-    setTimeout(() => {
-        if (typeof window.requestSimulateTask === 'function') {
-            window.requestSimulateTask(false);
-        }
-    }, randomDelay);
-};
-
         function initCoreListeners() {
 
 
