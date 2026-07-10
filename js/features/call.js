@@ -1,3 +1,4 @@
+
 (function () {
     'use strict';
 
@@ -1104,8 +1105,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     function scheduleRandomCall() {
         clearTimeout(S.randomCallTimer);
         if (!S.enabled) return;
-        // === 临时测试代码：3秒后 100% 概率来电 ===
-        const ms = 3000; 
+        // === 临时测试代码：60秒后 100% 概率来电 ===
+        const ms = 60000; 
         S.randomCallTimer = setTimeout(() => {
             if (S.enabled && !S.active) showIncomingCall(); // 100%触发
             // 测试完毕后，记得把这里改回 scheduleRandomCall(); 
