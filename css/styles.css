@@ -692,7 +692,7 @@
             transition: var(--transition);
             order: 2;
         }
-      .header-motto {
+        .header-motto {
         position: relative;
         top: auto;
         left: auto;
@@ -701,13 +701,13 @@
         align-items: center;
         justify-content: center;
         width: 100%;
-        padding: 2px 24px 4px;
+        padding: 8px 24px 8px;
         margin: 0 auto;
         max-width: 100%;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 10px;
+        font-size: 12px;
         font-family: 'Inter', 'Noto Serif SC', 'Cormorant Garamond', serif, -apple-system, BlinkMacSystemFont, sans-serif;
         font-weight: 350;
         letter-spacing: 3px;
@@ -1114,8 +1114,8 @@
         }
         .input-area {
             display: flex;
-            padding: 12px 15px;
-            gap: 10px;
+            padding: 8px 12px;
+            gap: 8px;
             border-top: 1px solid var(--border-color);
             align-items: flex-end;
             transition: border-color 0.5s ease;
@@ -1123,14 +1123,14 @@
         .message-input {
             flex: 1;
             border: 1px solid transparent;
-            border-radius: 28px;
-            padding: 12px 18px;
+            border-radius: 24px;
+            padding: 9px 16px;
             background-color: var(--primary-bg);
             color: var(--text-primary);
             resize: none;
             outline: none;
-            max-height: 120px;
-            min-height: 46px;
+            max-height: 100px;
+            min-height: 38px;
             transition: var(--transition);
             font-weight: 500;
             font-family: var(--font-family);
@@ -1161,8 +1161,8 @@
         .input-btn {
             border: none;
             border-radius: 50%;
-            width: 46px;
-            height: 46px;
+            width: 38px;
+            height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2612,9 +2612,11 @@
             cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
+            transform: scale(0.85);
+            transform-origin: bottom left;
         }
         .typing-indicator:hover {
-            transform: translateY(-2px) scale(1.02);
+            transform: scale(0.85) translateY(-2px) scale(1.02);
             border-color: rgba(var(--accent-color-rgb), 0.40);
             box-shadow:
                 0 12px 40px rgba(0,0,0,0.16),
@@ -2624,7 +2626,7 @@
                 inset 0 -1px 0 rgba(0,0,0,0.04);
         }
         .typing-indicator:active {
-            transform: translateY(0) scale(0.97);
+            transform: scale(0.85) translateY(0) scale(0.97);
             box-shadow:
                 0 4px 16px rgba(0,0,0,0.10),
                 0 1px 4px rgba(0,0,0,0.07),
@@ -2679,12 +2681,12 @@
             letter-spacing: 0;
         }
         @keyframes typingIndicatorIn {
-            from { opacity: 0; transform: translateY(14px) scale(0.82); }
-            to   { opacity: 1; transform: translateY(0)   scale(1); }
+            from { opacity: 0; transform: translateY(14px) scale(0.70); }
+            to   { opacity: 1; transform: translateY(0)   scale(0.85); }
         }
         @keyframes typingIndicatorOut {
-            from { opacity: 1; transform: translateY(0)   scale(1); }
-            to   { opacity: 0; transform: translateY(8px)  scale(0.90); }
+            from { opacity: 1; transform: translateY(0)   scale(0.85); }
+            to   { opacity: 0; transform: translateY(8px)  scale(0.75); }
         }
         .typing-indicator.hiding {
             animation: typingIndicatorOut 0.25s ease forwards;
@@ -10448,7 +10450,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
+            flex: 1;
             height: 48px; 
             border: none;
             border-radius: 12px;
@@ -10896,62 +10898,3 @@
     z-index: 2001 !important;
 }
 
-/* ========================================== */
-/* === 自定义美化：底部栏、输入中、收纳栏、格言 === */
-/* ========================================== */
-
-/* 1. 底部栏按键和输入框缩小至85%，输入框变细长 */
-.message-input {
-    min-height: 39px !important; /* 46 * 0.85 ≈ 39 */
-    padding: 10px 18px !important;
-}
-.input-btn {
-    width: 39px !important;
-    height: 39px !important;
-    font-size: 15px !important;
-}
-.input-area {
-    padding: 10px 12px !important;
-    gap: 8px !important;
-}
-
-/* 2. “正在输入中”浮窗缩小至85% */
-#typing-indicator-wrapper {
-    transform: scale(0.85);
-    transform-origin: bottom left;
-    /* 缩小后底部会有空隙，稍微往下挪一点贴合 */
-    margin-bottom: -6px; 
-}
-
-/* 3. 收纳栏改成 1行4个，并调小按钮使其更紧凑 */
-#collapsed-extras-panel {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-around;
-    gap: 10px !important;
-    padding: 8px 12px !important;
-}
-#collapsed-extras-panel .collapsed-extra-btn {
-    height: 40px !important;
-    font-size: 17px !important;
-    width: 100% !important;
-}
-/* 退出收纳模式的按钮变窄，不占太多空间 */
-#collapsed-extras-panel .collapsed-exit-btn {
-    width: 40px !important;
-    flex-shrink: 0 !important;
-}
-
-/* 4. 顶部格言字体加大，位置轻微下移 */
-.header-motto {
-    font-size: 11.5px !important; /* 原来是10px，微大一点 */
-    padding-top: 6px !important;  /* 顶部增加留白往下压 */
-    padding-bottom: 6px !important;
-}
-/* 兼容小屏幕格言 */
-@media (max-width: 480px) {
-    .header-motto {
-        font-size: 11px !important;
-        padding-top: 5px !important;
-    }
-}
