@@ -763,7 +763,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 if (++tries > 25) clearInterval(t);
             }, 200);
         }
-    }
 
         if (isInteractive) {
             setTimeout(() => {
