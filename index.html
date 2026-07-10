@@ -1304,62 +1304,54 @@
                     </div>
                     <p class="cs-group-label" style="margin-top:16px;">通话音效</p>
                     <div class="cs-card">
-                        <!-- 通话音效总开关 -->
-                        <div class="setting-pill-row" id="call-sound-toggle" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-                            <div class="setting-pill-info">
-                                <div class="setting-pill-label">通话音效 <span id="call-sound-state-label" style="font-size:11px;color:var(--text-secondary);font-weight:400;">已开启</span></div>
-                                <div class="setting-pill-desc">开启后，来电和拨打时将播放铃声</div>
-                            </div>
-                            <div class="setting-pill-switch"></div>
+                        <div class="setting-pill-row" id="call-sound-toggle">
+                            <span class="setting-pill-icon"><i class="fas fa-phone-volume"></i></span>
+                            <span class="setting-pill-label">开启音效 <span id="call-sound-state-label" style="font-size:11px;color:var(--text-secondary);font-weight:400;">已开启</span></span>
+                            <div class="setting-pill-switch"><div class="setting-pill-knob"></div></div>
                         </div>
+                        <div id="call-sound-detail-section" class="cs-sound-inner" style="padding-top:10px;">
+                            <div class="cs-slider-row" style="border-bottom:1px solid var(--border-color);padding:0 0 10px;">
+                                <span class="cs-slider-label" style="width:32px;">音量</span>
+                                <input type="range" min="0" max="200" step="5" value="30" class="font-size-slider" id="call-volume-slider">
+                                <span class="cs-slider-val" id="call-volume-value">30%</span>
+                            </div>
+                            <div style="padding-top:10px;display:flex;flex-direction:column;gap:12px;">
+                                <div>
+                                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">我发起通话的铃声</div>
+                                    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+                                        <select id="sound-my-call-preset" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;font-family:var(--font-family);">
+                                            <option value="mute">无铃声</option>
+                                            <option value="tone_ringback">内置：嘟嘟回铃</option>
+                                            <option value="tone_soft_bell">内置：柔和门铃</option>
+                                            <option value="tone_marimba">内置：马林巴琴</option>
+                                            <option value="tone_synth">内置：极简电子</option>
+                                        </select>
+                                        <button id="test-sound-my-call-btn" class="modal-btn modal-btn-secondary" style="padding:6px 10px;font-size:12px;white-space:nowrap;"><i class="fas fa-play"></i> 试听</button>
+                                    </div>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <input type="text" id="sound-my-call-custom-url" placeholder="可填自定义URL（留空用内置预设）" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;">
+                                    </div>
+                                </div>
 
-                        <!-- 通话音量大小的滑块 -->
-                        <div class="setting-row" id="call-volume-row" style="padding: 10px 0; margin-bottom: 8px;">
-                            <div style="width: 100%;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span style="font-size: 13px; color: var(--text-secondary);">铃声大小</span>
-                                    <span id="call-volume-value" style="font-size: 12px; color: var(--accent-color); font-weight: 600;">30%</span>
-                                </div>
-                                <input type="range" id="call-volume-slider" min="0" max="200" value="30" style="width: 100%;">
-                            </div>
-                        </div>
-                        
-                        <div style="padding-top:10px;display:flex;flex-direction:column;gap:12px;">
-                            <div>
-                                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">我发起通话的铃声</div>
-                                <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-                                    <select id="sound-my-call-preset" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;font-family:var(--font-family);">
-                                        <option value="mute">无铃声</option>
-                                        <option value="tone_ringback">内置：嘟嘟回铃</option>
-                                        <option value="tone_soft_bell">内置：柔和门铃</option>
-                                        <option value="tone_marimba">内置：马林巴琴</option>
-                                        <option value="tone_synth">内置：极简电子</option>
-                                    </select>
-                                    <button id="test-sound-my-call-btn" class="modal-btn modal-btn-secondary" style="padding:6px 10px;font-size:12px;white-space:nowrap;"><i class="fas fa-play"></i> 试听</button>
-                                </div>
-                                <div style="display:flex;gap:6px;align-items:center;">
-                                    <input type="text" id="sound-my-call-custom-url" placeholder="可填自定义URL（留空用内置预设）" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;">
-                                </div>
-                            </div>
-
-                            <div>
-                                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">对方发起通话的铃声</div>
-                                <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-                                    <select id="sound-partner-call-preset" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;font-family:var(--font-family);">
-                                        <option value="mute">无铃声</option>
-                                        <option value="tone_ringback">内置：嘟嘟回铃</option>
-                                        <option value="tone_soft_bell">内置：柔和门铃</option>
-                                        <option value="tone_marimba">内置：马林巴琴</option>
-                                        <option value="tone_synth">内置：极简电子</option>
-                                    </select>
-                                    <button id="test-sound-partner-call-btn" class="modal-btn modal-btn-secondary" style="padding:6px 10px;font-size:12px;white-space:nowrap;"><i class="fas fa-play"></i> 试听</button>
-                                </div>
-                                <div style="display:flex;gap:6px;align-items:center;">
-                                    <input type="text" id="sound-partner-call-custom-url" placeholder="可填自定义URL（留空用内置预设）" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;">
+                                <div>
+                                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">对方发起通话的铃声</div>
+                                    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+                                        <select id="sound-partner-call-preset" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;font-family:var(--font-family);">
+                                            <option value="mute">无铃声</option>
+                                            <option value="tone_ringback">内置：嘟嘟回铃</option>
+                                            <option value="tone_soft_bell">内置：柔和门铃</option>
+                                            <option value="tone_marimba">内置：马林巴琴</option>
+                                            <option value="tone_synth">内置：极简电子</option>
+                                        </select>
+                                        <button id="test-sound-partner-call-btn" class="modal-btn modal-btn-secondary" style="padding:6px 10px;font-size:12px;white-space:nowrap;"><i class="fas fa-play"></i> 试听</button>
+                                    </div>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <input type="text" id="sound-partner-call-custom-url" placeholder="可填自定义URL（留空用内置预设）" style="flex:1;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:12px;background:var(--primary-bg);color:var(--text-primary);outline:none;">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div> 
+                    </div>
                     <p class="cs-group-label" style="margin-top:16px;">挂机保活音频</p>
                     <div class="cs-card">
                         <div class="setting-pill-row" id="keepalive-audio-toggle" onclick="window._toggleKeepaliveAudio && window._toggleKeepaliveAudio()">
