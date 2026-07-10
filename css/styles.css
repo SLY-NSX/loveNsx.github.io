@@ -10751,11 +10751,6 @@
             transition: none !important;
         }
 
-        #keepalive-audio-switch.active .setting-pill-knob {
-            transform: translateX(20px);
-            background: #fff;
-        }
-
         .keepalive-dot {
             position: absolute;
             bottom: -1px;
