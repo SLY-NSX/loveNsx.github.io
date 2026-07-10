@@ -767,20 +767,29 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         if (isInteractive) {
             setTimeout(() => {
                 const chatContainer = document.getElementById('chat') || document.querySelector('.chat-body') || document.body;
-                const messages = chatContainer.querySelectorAll('[class*="mes"], [class*="system"], [class*="message"], [class*="event"]');
-                
-                console.log('--- 电话事件测试 ---');
-                console.log('正在寻找的标签:', `"${label}"`);
-                console.log('页面找到的所有相关元素:', messages);
+                // 扩大搜索范围，适配各种前端结构
+                const messages = chatContainer.querySelectorAll('[class*="mes"], [class*="system"], [class*="message"], [class*="event"], .text');
                 
                 for (let i = messages.length - 1; i >= 0; i--) {
                     const el = messages[i];
-                    console.log('第', i, '个元素的文本是:', `"${el.textContent.trim()}"`); // 看看实际抓到的文本长啥样
-                    
-                    if (el.textContent.trim() === label.trim() && !el.dataset.callInteractive) {
-                        el.dataset.callInteractive = (label.includes('拒绝') ? 'reject' : 'missed');
-                        attachLongPress(el);
-                        console.log('✅ 成功匹配并绑定了事件！');
+                    // 【关键修改1】：把严格相等 === 改成包含 includes，避免时间戳导致找不到
+                    if (el.textContent.includes(label) && !el.dataset.callInteractive) {
+                        el.dataset.callInteractive = (label.includes('拒绝') || label.includes('未接')) ? 'reject' : 'missed';
+                        
+                        // 【关键修改2】：直接绑定 click 事件，不再依赖不存在的 attachLongPress
+                        el.style.cursor = 'pointer'; // 鼠标放上去变成小手
+                        el.style.textDecoration = 'underline'; // 加个下划线提示可以点
+                        el.title = '点击查看通话详情';
+                        
+                        el.addEventListener('click', function(event) {
+                            event.stopPropagation(); // 防止点击穿透
+                            // 这里暂时弹个窗，证明点击生效了
+                            alert('✅ 点击生效！\n你点击了: ' + label + '\n接下来你可以把这里改成打开通话界面的代码。');
+                            
+                            // 比如：showIncomingCall(); 或者打开某个记录面板
+                        });
+                        
+                        console.log('✅ 成功为元素绑定了点击事件！元素:', el);
                         break;
                     }
                 }
