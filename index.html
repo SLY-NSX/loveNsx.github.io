@@ -1304,6 +1304,11 @@
                     </div>
                     <p class="cs-group-label" style="margin-top:16px;">通话音效</p>
                     <div class="cs-card">
+                        <div class="cs-slider-row" style="border-bottom:1px solid var(--border-color);padding:0 14px 10px;margin:0 -14px 10px;">
+                            <span class="cs-slider-label" style="width:32px;">音量</span>
+                            <input type="range" min="0" max="100" step="5" value="30" class="font-size-slider" id="call-volume-slider">
+                            <span class="cs-slider-val" id="call-volume-value">30%</span>
+                        </div>
                         <div style="padding-top:10px;display:flex;flex-direction:column;gap:12px;">
                             <div>
                                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">我发起通话的铃声</div>
