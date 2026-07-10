@@ -1051,14 +1051,16 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     wrapper.dataset.id = msg.id;
     wrapper.dataset.msgId = msg.id;
 
+    // 【修复】必须在此处声明 groupMember 变量，否则下方代码会崩溃
+    const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
+
     const avatarDiv = document.createElement('div');
     avatarDiv.className = 'message-avatar';
     if (settings.inChatAvatarPosition === 'custom' && settings.inChatAvatarCustomOffset !== undefined) {
         avatarDiv.style.marginTop = settings.inChatAvatarCustomOffset + 'px';
     }
 
-    const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
-
+    // 【修复】补全头像生成逻辑，否则所有头像都会消失
     if (settings.inChatAvatarEnabled) {
         const isSameSenderGroup = groupMember && lastSenderRef.current === 'group_' + (groupMember ? groupMember.name : '');
         const isSameSenderNormal = !groupMember && msg.sender === lastSenderRef.current;
