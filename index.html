@@ -1304,9 +1304,25 @@
                     </div>
                     <p class="cs-group-label" style="margin-top:16px;">通话音效</p>
                     <div class="cs-card">
-                        <div class="cs-slider-row" style="border-bottom:1px solid var(--border-color);padding:0 14px 10px;margin:0 -14px 10px;">
-                            <span class="cs-slider-label" style="width:32px;">音量</span>
-                            <input type="range" min="0" max="100" step="5" value="30" class="font-size-slider" id="call-volume-slider">
+                        <!-- 通话音效总开关 -->
+                        <div class="setting-pill-row" id="call-sound-toggle" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                            <div class="setting-pill-info">
+                                <div class="setting-pill-label">通话音效 <span id="call-sound-state-label" style="font-size:11px;color:var(--text-secondary);font-weight:400;">已开启</span></div>
+                                <div class="setting-pill-desc">开启后，来电和拨打时将播放铃声</div>
+                            </div>
+                            <div class="setting-pill-switch"></div>
+                        </div>
+
+                        <!-- 通话音量大小的滑块 -->
+                        <div class="setting-row" id="call-volume-row" style="padding: 10px 0; margin-bottom: 8px;">
+                            <div style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-size: 13px; color: var(--text-secondary);">铃声大小</span>
+                                    <span id="call-volume-value" style="font-size: 12px; color: var(--accent-color); font-weight: 600;">30%</span>
+                                </div>
+                                <input type="range" id="call-volume-slider" min="0" max="200" value="30" style="width: 100%;">
+                            </div>
+                        </div>
                             <span class="cs-slider-val" id="call-volume-value">30%</span>
                         </div>
                         <div style="padding-top:10px;display:flex;flex-direction:column;gap:12px;">
