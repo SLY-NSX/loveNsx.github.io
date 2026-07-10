@@ -112,6 +112,16 @@
             }
         };
 
+        // 检查总开关是否开启
+        function _getCallEnabled() {
+            try {
+                if (typeof settings !== 'undefined' && settings.callSoundEnabled === false) {
+                    return false;
+                }
+            } catch(e) {}
+            return true;
+        }
+
         function _getCallVol() {
             try {
                 if (typeof settings !== 'undefined' && typeof settings.callVolume === 'number') {
@@ -123,18 +133,40 @@
 
         function _play(preset, customUrl) {
             _stop();
+            
+            // 如果总开关关了，直接不播放
+            if (!_getCallEnabled()) return; 
+
             const vol = _getCallVol();
             if (customUrl) {
                 _customAudioEl = new Audio(customUrl);
                 _customAudioEl.loop = true;
-                _customAudioEl.volume = vol;
+                _customAudioEl.crossOrigin = "anonymous";
+                
+                // 如果音量大于1 (100%)，需要通过 Web Audio API 放大
+                if (vol > 1.0) {
+                    try {
+                        const ctx = _getCtx();
+                        const source = ctx.createMediaElementSource(_customAudioEl);
+                        const gainNode = ctx.createGain();
+                        gainNode.gain.value = vol;
+                        source.connect(gainNode);
+                        gainNode.connect(ctx.destination);
+                        _currentNodes.push(source, gainNode); // 保存节点以便停止时清理
+                    } catch(e) {
+                        _customAudioEl.volume = 1.0; // 回退到最大原始音量
+                    }
+                } else {
+                    _customAudioEl.volume = vol;
+                }
+                
                 _customAudioEl.play().catch(()=>{});
                 return;
             }
             if (!synthesizers[preset]) return;
             const ctx = _getCtx();
             const out = ctx.createGain();
-            out.gain.value = vol; 
+            out.gain.value = vol; // 合成音可以直接放大，不怕爆音
             out.connect(ctx.destination);
             synthesizers[preset](ctx, out);
         }
