@@ -10947,3 +10947,90 @@
 #call-reply-menu button:nth-child(2) {
     margin: 4px 0 !important;
 }
+
+/* === 电话气泡消息样式 === */
+.call-bubble-wrapper {
+    margin-bottom: 10px !important;
+    max-width: 85% !important;
+}
+.call-bubble-wrapper .message-avatar {
+    margin-bottom: 0 !important;
+}
+.call-bubble-content-wrapper {
+    align-items: stretch !important;
+    max-width: 100% !important;
+}
+.call-bubble-message {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 9px 14px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+    cursor: default !important;
+    pointer-events: auto;
+    min-width: 0;
+    max-width: 100%;
+    background-color: var(--message-sent-bg) !important;
+    background: var(--message-sent-bg) !important;
+}
+.call-bubble-message.message-received {
+    background-color: var(--message-received-bg) !important;
+    background: var(--message-received-bg) !important;
+}
+.call-bubble-message.call-bubble-interactive {
+    cursor: pointer !important;
+    transition: transform 0.15s, filter 0.15s !important;
+}
+.call-bubble-message.call-bubble-interactive:active {
+    transform: scale(0.96) !important;
+    filter: brightness(0.95) !important;
+}
+html[data-theme="dark"] .call-bubble-message.message-sent {
+    background-color: var(--accent-color-dark, var(--accent-color)) !important;
+    background: var(--accent-color-dark, var(--accent-color)) !important;
+}
+.call-bubble-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1;
+    white-space: nowrap;
+}
+.call-bubble-icon {
+    font-size: 12px;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+.call-bubble-text {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+.call-bubble-message.message-sent .call-bubble-icon,
+.call-bubble-message.message-sent .call-bubble-text {
+    color: var(--message-sent-text);
+}
+.call-bubble-message.message-received .call-bubble-icon,
+.call-bubble-message.message-received .call-bubble-text {
+    color: var(--message-received-text);
+}
+
+/* 修复：call-bubble 出现时隐藏可能残留的 meta-actions */
+.call-bubble-wrapper .message-meta-actions,
+.call-bubble-wrapper .message-meta {
+    display: none !important;
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+    .call-bubble-wrapper {
+        max-width: 90% !important;
+    }
+    .call-bubble-text {
+        font-size: 12.5px;
+    }
+    .call-bubble-icon {
+        font-size: 11px;
+    }
+}
