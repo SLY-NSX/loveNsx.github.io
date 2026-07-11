@@ -912,8 +912,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 const state = JSON.parse(stateStr);
                 // 如果有记录，说明上一次是非正常退出
                 if (state.d > 0) {
-                    sendCallEvent('fa-phone-slash', '上次通话意外中断', null);
-                    sendCallEvent('', `通话时长 ${fmt(state.d)}`, null);
+                    // 意外中断：保持以系统消息方式中间弹出（合并成一条）
+                    sendCallEvent('fa-phone-slash', '上次通话意外中断', `通话时长 ${fmt(state.d)}`);
                 }
                 localStorage.removeItem(ACCIDENT_KEY);
             }
@@ -977,11 +977,15 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                     const bodyEl = document.getElementById('call-window-body');
                     if (bodyEl) bodyEl.style.display = '';
                     
-                    const lbl = `${partnerName}拒绝${myName}的来电`;
-                    sendCallEvent('fa-phone-slash', lbl, null);
-                    if (typeof showNotification === 'function') showNotification(lbl, 'info', 3000);
-                    
-                    triggerAutoPartnerReply('reject'); // 18秒后自动回复
+                    if (typeof window._addCallBubble === 'function') {
+                        window._addCallBubble('fa-phone-slash', '对方已拒绝', 'user', null);
+                    } else {
+                        const lbl = `${partnerName}拒绝${myName}的来电`;
+                        sendCallEvent('fa-phone-slash', lbl, null);
+                    }
+                    if (typeof showNotification === 'function') showNotification(`${partnerName}拒绝了你的来电`, 'info', 3000);
+
+                    triggerAutoPartnerReply('reject'); // 18秒后自动以系统消息方式弹出原因解释
                 } else {
                     // 5% 未接听，一直等到满 30秒
                     const remaining = 30000 - reactDelay;
@@ -997,11 +1001,15 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                         const bodyEl = document.getElementById('call-window-body');
                         if (bodyEl) bodyEl.style.display = '';
                         
-                        const lbl = `${partnerName}未接听${myName}的来电`;
-                        sendCallEvent('fa-phone-slash', lbl, null);
-                        if (typeof showNotification === 'function') showNotification(lbl, 'info', 3000);
-                        
-                        triggerAutoPartnerReply('missed'); // 18秒后自动回复
+                        if (typeof window._addCallBubble === 'function') {
+                            window._addCallBubble('fa-phone-slash', '对方无应答', 'user', null);
+                        } else {
+                            const lbl = `${partnerName}未接听${myName}的来电`;
+                            sendCallEvent('fa-phone-slash', lbl, null);
+                        }
+                        if (typeof showNotification === 'function') showNotification(`${partnerName}未接听你的来电`, 'info', 3000);
+
+                        triggerAutoPartnerReply('missed'); // 18秒后自动以系统消息方式弹出原因解释
                     }, remaining);
                 }
             }, reactDelay);
@@ -1052,20 +1060,29 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         if (dur > 0) {
             const myName = getMyName();
             const partnerName = getName();
-            // 第一条：谁挂断的
-            let lbl = isPartnerHungUp 
-                ? `${partnerName}选择结束通话` 
-                : `${myName}选择结束通话`;
-            sendCallEvent('fa-phone-slash', lbl, null);
-            
-            // 第二条：通话时长
-            sendCallEvent('', `通话时长 ${fmt(dur)}`, null);
-            
+            const callDurationText = `通话时长 ${fmt(dur)}`;
+    
+            // 谁挂断，显示谁的气泡
+            const bubbleSender = isPartnerHungUp ? 'partner' : 'user';
+    
+            if (typeof window._addCallBubble === 'function') {
+                window._addCallBubble('fa-phone', callDurationText, bubbleSender, null);
+            } else {
+                // fallback：旧逻辑
+                let lbl = isPartnerHungUp 
+                    ? `${partnerName}选择结束通话` 
+                    : `${myName}选择结束通话`;
+                sendCallEvent('fa-phone-slash', lbl, null);
+                sendCallEvent('', callDurationText, null);
+            }
+    
             if (typeof showNotification === 'function') 
                 showNotification(`通话结束 · ${fmt(dur)}`, 'info', 3000);
-            
-            // 新增：发送通话结束的系统通知
+    
             if (typeof window._sendPartnerNotification === 'function') {
+                const lbl = isPartnerHungUp 
+                    ? `${partnerName}选择结束通话` 
+                    : `${myName}选择结束通话`;
                 window._sendPartnerNotification(partnerName, lbl);
             }
         }
@@ -1088,11 +1105,21 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         S.incomingTimer = setTimeout(() => {
             if (!ov.classList.contains('visible')) return;
             ov.classList.remove('visible');
-            window.CallRing.stop(); // 超时未接听停止
+            window.CallRing.stop();
             const myName = getMyName();
-            const partnerName = getName();
-            const lbl = `${myName}未接听${partnerName}的来电`;
-            sendCallEvent('fa-phone-slash', lbl, null, true); // 允许长按交互
+            const missedOptions = [
+                `${myName}正忙，无法接听来电`,
+                `${myName}未能查看消息，漏接来电`,
+                `${myName}表示稍后可电话联系`
+            ];
+            if (typeof window._addCallBubble === 'function') {
+                // 对方发起→对方气泡→"对方无应答"→可点击弹3选项
+                window._addCallBubble('fa-phone-slash', '对方无应答', 'partner', missedOptions);
+            } else {
+                const partnerName = getName();
+                const lbl = `${myName}未接听${partnerName}的来电`;
+                sendCallEvent('fa-phone-slash', lbl, null, true);
+            }
         }, 30000);
     }
 
@@ -1235,12 +1262,21 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     function bindEvents() {
         document.getElementById('call-inc-reject')?.addEventListener('click', () => {
             document.getElementById('call-incoming-overlay')?.classList.remove('visible');
-            window.CallRing.stop(); // 手动拒接停止
+            window.CallRing.stop();
             clearTimeout(S.incomingTimer);
             const myName = getMyName();
-            const partnerName = getName();
-            const lbl = `${myName}拒绝${partnerName}的来电`;
-            sendCallEvent('fa-phone-slash', lbl, null, true); // 允许长按交互
+            const rejectOptions = [
+                `${myName}正忙，无法接听来电`,
+                `${myName}表示稍后可电话联系`
+            ];
+            if (typeof window._addCallBubble === 'function') {
+                // 对方发起→对方气泡→"对方已拒绝"→可点击弹2选项
+                window._addCallBubble('fa-phone-slash', '对方已拒绝', 'partner', rejectOptions);
+            } else {
+                const partnerName = getName();
+                const lbl = `${myName}拒绝${partnerName}的来电`;
+                sendCallEvent('fa-phone-slash', lbl, null, true);
+            }
         });
         document.getElementById('call-inc-accept')?.addEventListener('click', () => {
             document.getElementById('call-incoming-overlay')?.classList.remove('visible');
