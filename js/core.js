@@ -1216,15 +1216,18 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     let messageHTML = '';
     let replyHTML = '';
 
-    // 1. 提取引用信息（单独拼接，不放入主气泡）
+    let messageHTML = '';
+    let replyHTML = '';
+
+    // 1. 提取引用信息
     if (msg.replyTo) {
         const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
         const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-        // 注意这里把名字和消息拼成了一行，格式为 "名字：消息"
-        replyHTML = `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}：</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+        // 加入了 event.stopPropagation() 阻止冒泡，解决点击变成收藏/删除菜单的问题
+        replyHTML = `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="event.stopPropagation(); scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}：</span><span class="reply-indicator-text">${repliedText}</span></div>`;
     }
 
-    // 2. 提取主消息内容 (文字和图片)
+    // 2. 提取主消息内容
     const isImageOnly = !msg.text && !!msg.image;
     let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
     if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
@@ -1240,26 +1243,23 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
 
     // 核心逻辑：如果存在引用消息，则改变 DOM 嵌套方式
     if (replyHTML) {
-        // 备份原本属于气泡的全部 class（包含颜色、圆角、图片特定样式等）
         const originalBubbleClasses = messageDiv.className;
         
-        // messageDiv 变身为最外层的透明对齐容器，保留 sent/received 方便 CSS 识别左右
         messageDiv.className = `message-outer-wrapper message-${msg.sender === 'user' ? 'sent' : 'received'}`;
         
-        // 创建内层真正承载消息的气泡，把原本的 class 全给它
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = originalBubbleClasses;
         bubbleDiv.innerHTML = messageHTML;
+        // 核心修复：让气泡按内容自适应宽度，解决"两个字就换行"的收缩问题
+        bubbleDiv.style.width = 'fit-content';
+        bubbleDiv.style.maxWidth = '100%';
         
-        // 组装：外层容器 -> [内部真实气泡] + [引用块]
         messageDiv.innerHTML = '';
         messageDiv.appendChild(bubbleDiv);
         messageDiv.insertAdjacentHTML('beforeend', replyHTML);
     } else {
-        // 如果没有引用消息，保持原样直接填入
         messageDiv.innerHTML = messageHTML;
     }
-    messageDiv.innerHTML = messageHTML;
 
     let actionsHTML = '';
     if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
