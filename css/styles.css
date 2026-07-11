@@ -11034,3 +11034,34 @@ html[data-theme="dark"] .call-bubble-message.message-sent {
         font-size: 11px;
     }
 }
+
+/* === 微信风格中间时间戳样式 === */
+.time-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 12px 0;
+    color: var(--timestamp-color, var(--text-secondary));
+    font-size: 11px;
+    opacity: 0.85;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.time-separator span {
+    background-color: rgba(0, 0, 0, 0.06);
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+html[data-theme="dark"] .time-separator span {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 如果有背景图，背景色加深一点保证可读性 */
+body.with-background .time-separator span {
+    background-color: rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
