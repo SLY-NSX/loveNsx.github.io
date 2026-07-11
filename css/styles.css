@@ -10946,10 +10946,6 @@
     transform: scale(0.98) !important;
 }
 
-#call-reply-menu button:nth-child(2) {
-    margin: 4px 0 !important;
-}
-
 /* === 电话气泡消息样式 === */
 .call-bubble-wrapper {
     margin-bottom: 10px !important;
