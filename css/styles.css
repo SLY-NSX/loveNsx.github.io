@@ -10924,14 +10924,15 @@
 }
 
 #call-reply-menu button {
-    width: calc(100% - 60px) !important; /* 左右各留出30px的空白，显得更小巧 */
-    margin: 0 auto !important; /* 居中显示 */
-    padding: 6px 10px !important; /* 大幅减小上下内边距，变得更窄 */
+    display: block !important; /* 强制块级，确保 margin auto 生效 */
+    width: calc(100% - 60px) !important; /* 左右各留出30px的空白 */
+    margin: 6px auto !important; /* 上下6px间距，左右自动居中 */
+    padding: 6px 10px !important; /* 高度变窄 */
     background-color: var(--accent-color) !important;
     border: 1px solid var(--accent-color) !important;
     border-radius: 12px !important; 
-    color: #ffffff !important; /* 文字改为白色 */
-    font-size: 13px !important; /* 字体稍微再小一点 */
+    color: #ffffff !important; /* 白色文字 */
+    font-size: 13px !important;
     font-weight: 500 !important;
     text-align: center !important;
     cursor: pointer !important;
