@@ -973,7 +973,7 @@
         }
 
 .message {
-    padding: 9px 14px;
+    padding: 9px 10px;
     border-radius: var(--radius);
     word-wrap: break-word;
     line-height: var(--message-line-height);
