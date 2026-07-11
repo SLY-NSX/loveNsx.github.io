@@ -943,6 +943,7 @@
             display: flex;
             flex-direction: column;
             max-width: 100%;
+            min-width: 0; /* 打破死循环关键 */
         }
 
         @keyframes messageAppear {
@@ -1253,7 +1254,8 @@
 .message-outer-wrapper {
     display: flex;
     flex-direction: column;
-    max-width: 75%; 
+    max-width: 100%; /* 不要在这里限制死，让里面的气泡和引用自己分 */
+    min-width: 0;
     margin-bottom: 10px; 
 }
 .message-outer-wrapper.message-sent {
@@ -1272,11 +1274,11 @@
     padding: 4px 0 0 0 !important;
     margin-top: 4px;
     display: flex;
-    align-items: flex-start; /* 允许多行从左侧对齐 */
-    max-width: 100%;
-    width: 100%; /* 占满外层容器，允许文字比气泡长 */
+    align-items: flex-start; 
+    /* 核心修复：引用块最大占 90%，比气泡(65%)要长 */
+    max-width: 90%; 
+    width: 100%;
     font-size: 12px;
-    /* 核心修复：修正了不存在的变量名，并强制覆盖掉气泡的白色 */
     color: var(--text-secondary, #888) !important; 
     line-height: 1.4;
     user-select: none;
