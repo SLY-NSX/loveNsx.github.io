@@ -1159,11 +1159,15 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     function scheduleRandomCall() {
         clearTimeout(S.randomCallTimer);
         if (!S.enabled) return;
-        const ms = (30 + Math.random() * 45) * 60 * 1000; // 30-75分钟
+        // === 临时测试代码：60秒后 100% 概率来电 ===
+        const ms = 60000; 
         S.randomCallTimer = setTimeout(() => {
-            if (S.enabled && !S.active && Math.random() < 0.25) showIncomingCall();
-            scheduleRandomCall();
+            if (S.enabled && !S.active) showIncomingCall(); // 100%触发
+            // 测试完毕后，记得把这里改回 scheduleRandomCall(); 
+            // 或者直接把整个函数替换回原来的版本
+            scheduleRandomCall(); 
         }, ms);
+        // === 临时测试代码结束 ===
     }
 
     function minimizeWindow() {
