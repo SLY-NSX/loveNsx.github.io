@@ -1091,10 +1091,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 sendCallEvent('fa-phone-slash', lbl, null);
                 sendCallEvent('', callDurationText, null);
             }
-    
-            if (typeof showNotification === 'function') 
-                showNotification(`通话结束 · ${fmt(dur)}`, 'info', 3000);
-    
+
             if (typeof window._sendPartnerNotification === 'function') {
                 const lbl = isPartnerHungUp 
                     ? `${partnerName}选择结束通话` 
