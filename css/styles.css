@@ -984,6 +984,8 @@
             max-width: 70%;
             width: fit-content;  
             text-align: left;
+            text-align: justify;
+            text-justify: inter-ideograph;
             font-family: var(--message-font-family);
             font-weight: var(--message-font-weight);
         }
