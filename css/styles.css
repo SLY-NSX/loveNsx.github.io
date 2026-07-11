@@ -1250,72 +1250,73 @@
         }
 
 /* === 1. 外层对齐容器 === */
-/* 让带有引用的外层容器变成透明，并把气泡和引用块上下排列 */
 .message-outer-wrapper {
     display: flex;
     flex-direction: column;
-    max-width: 75%; /* 继承你设定的最大宽度限制 */
-    margin-bottom: 10px; /* 保持消息间距 */
+    max-width: 75%; 
+    margin-bottom: 10px; 
 }
 .message-outer-wrapper.message-sent {
-    align-items: flex-end; /* 右侧消息：气泡和引用块都靠右 */
+    align-items: flex-end; 
 }
 .message-outer-wrapper.message-received {
-    align-items: flex-start; /* 左侧消息：气泡和引用块都靠左 */
+    align-items: flex-start; 
 }
 
 /* === 2. 微信风格的引用块 === */
-/* 清除原有可能存在的背景框或阴影 */
 .reply-indicator {
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    padding: 2px 0 !important;
-    /* 布局 */
-    display: inline-flex;
-    align-items: center;
-    max-width: 100%;
+    padding: 4px 0 0 0 !important;
     margin-top: 4px;
-    /* 字体（类似时间戳的小灰字） */
+    display: flex;
+    align-items: flex-start; /* 允许多行从左侧对齐 */
+    max-width: 100%;
+    width: 100%; /* 占满外层容器，允许文字比气泡长 */
     font-size: 12px;
-    color: var(--secondary-text, #888888); 
+    /* 核心修复：修正了不存在的变量名，并强制覆盖掉气泡的白色 */
+    color: var(--text-secondary, #888) !important; 
     line-height: 1.4;
+    user-select: none;
+    -webkit-user-select: none;
 }
 .reply-indicator-sender {
     margin-right: 2px;
     flex-shrink: 0;
     font-weight: 500;
 }
-/* 消息文字过长时省略，保持单行 */
+/* 核心修复：被引用消息允许换行显示完全 */
 .reply-indicator-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    flex: 1;
+    word-break: break-word;
 }
 
-/* 对方引用（在左侧）：小竖条在左，接着空一点，接着名字：消息 */
-.message-received .reply-indicator::before {
+/* 对方引用（在左侧）：小竖条在左 */
+.message-outer-wrapper.message-received .reply-indicator::before {
     content: '';
     display: inline-block;
     width: 3px;
     height: 12px;
-    background-color: var(--accent-color, #007aff); /* 随系统颜色的小竖条 */
+    background-color: var(--accent-color);
     border-radius: 1.5px;
-    margin-right: 6px; /* 空一点 */
+    margin-right: 6px;
     flex-shrink: 0;
+    margin-top: 3px; /* 微调竖条垂直对齐 */
 }
 
-/* 我方引用（在右侧）：名字：消息，接着空一点，小竖条在右 */
-.message-sent .reply-indicator::after {
+/* 我方引用（在右侧）：小竖条在右 */
+.message-outer-wrapper.message-sent .reply-indicator::after {
     content: '';
     display: inline-block;
     width: 3px;
     height: 12px;
-    background-color: var(--accent-color, #007aff); /* 随系统颜色的小竖条 */
+    background-color: var(--accent-color);
     border-radius: 1.5px;
-    margin-left: 6px; /* 空一点 */
+    margin-left: 6px;
     flex-shrink: 0;
+    margin-top: 3px; /* 微调竖条垂直对齐 */
 }
         .message-wrapper.reply-jump-flash .message {
             animation: replyJumpFlash 1s ease;
