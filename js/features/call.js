@@ -869,17 +869,11 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     // 定时检查对方是否随机挂断
     function scheduleNextHangupCheck() {
         clearTimeout(S.hangupCheckTimer);
-        const nextCheck = (22 + Math.random() * 16) * 60 * 1000; // 22-38分钟
+        // 【测试】2分钟 100% 挂断
         S.hangupCheckTimer = setTimeout(() => {
             if (!S.active) return;
-            if (Math.random() < 0.05) {
-                // 5% 概率对方挂断
-                endCall(true); 
-            } else {
-                // 继续下一次检查
-                scheduleNextHangupCheck();
-            }
-        }, nextCheck);
+            endCall(true); // 100% 概率对方挂断
+        }, 120000); // 120000毫秒 = 2分钟
     }
 
     // 开始每秒暂存通话状态，防止意外中断丢失记录
@@ -958,16 +952,14 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 const myName = getMyName();
                 const partnerName = getName();
                 
-                if (roll < 0.65) {
-                    // 65% 接通
+                if (roll < 0) { // 【测试】0% 接通
                     S.startTime = Date.now();
                     if (conn) conn.classList.remove('visible');
                     if (body) body.style.display = '';
                     tick();
                     startStateSave(); // 开始记录防意外遗言
                     scheduleNextHangupCheck(); // 开启随机挂断检查
-                } else if (roll < 0.95) {
-                    // 30% 对方拒接
+                } else if (roll < 0.5) { // 【测试】50% 对方拒接
                     S.active = false;
                     cancelAnimationFrame(S.timerRAF);
                     const winEl = document.getElementById('call-window');
