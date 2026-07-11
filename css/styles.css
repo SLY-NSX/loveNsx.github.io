@@ -10924,25 +10924,23 @@
 }
 
 #call-reply-menu button {
-    width: 100% !important;
-    padding: 16px 10px !important;
-    /* 按钮背景使用主题强调色 */
+    width: calc(100% - 32px) !important; /* 左右各留出16px的空白 */
+    margin: 0 auto !important; /* 居中显示 */
+    padding: 11px 10px !important; /* 减小上下内边距，变得更扁更小巧 */
     background-color: var(--accent-color) !important;
     border: 1px solid var(--accent-color) !important;
-    border-radius: 16px !important; /* 稍微增大圆角，更像气泡 */
-    /* 强制文字颜色为黑色 */
+    border-radius: 14px !important; 
     color: #1a1a1a !important;
-    font-size: 15px !important; /* 稍微缩小字体，更秀气 */
+    font-size: 14px !important; /* 稍微缩小字体 */
     font-weight: 500 !important;
     text-align: center !important;
     cursor: pointer !important;
     font-family: var(--font-family) !important;
     transition: filter 0.15s, transform 0.1s !important;
-    box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.25) !important; /* 加点阴影增加悬浮感 */
+    box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.2) !important;
 }
 
 #call-reply-menu button:active {
-    /* 按下时稍微变暗 */
     filter: brightness(0.92) !important;
     transform: scale(0.98) !important;
 }
