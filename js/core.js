@@ -1375,12 +1375,23 @@ const addMessage = (message) => {
     
     // --- Append new message ---
     let lastSenderRef = { current: null };
+    let lastTimeRef = { current: null };
+    
+    // 反向查找最近的一条参与时间对比的气泡消息
+    for (let i = messages.length - 2; i >= 0; i--) {
+        const m = messages[i];
+        if (m.type && m.type !== 'system' && m.type !== 'call-event') {
+            lastTimeRef.current = new Date(m.timestamp).getTime();
+            break;
+        }
+    }
+
     if (prevMsg) {
         const prevGroupMember = (prevMsg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(prevMsg.id) : null;
         lastSenderRef.current = prevGroupMember ? ('group_' + prevGroupMember.name) : prevMsg.sender;
     }
     
-    const newMsgFragment = createMessageFragment(message, prevMsg, null, lastSenderRef);
+    const newMsgFragment = createMessageFragment(message, prevMsg, null, lastSenderRef, lastTimeRef);
     
     const spacer = container.querySelector('div[style*="flex: 1"]');
     if (spacer && spacer === container.lastElementChild) {
