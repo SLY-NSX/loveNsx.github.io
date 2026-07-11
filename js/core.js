@@ -981,7 +981,7 @@ function _scheduleNextAutoSend() {
             }
         };
 
-function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
+function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef) {
     const fragment = new DocumentFragment();
     const messageDate = new Date(msg.timestamp).toDateString();
     const prevDate = prevMsg ? new Date(prevMsg.timestamp).toDateString() : null;
@@ -999,6 +999,37 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         dateDivider.innerHTML = `<span>${displayDate}</span>`;
         fragment.appendChild(dateDivider);
         lastSenderRef.current = null;
+        lastTimeRef.current = null; // 日期变化，重置时间对比基准
+    }
+
+    // 判断是否参与时间戳对比：
+    const isValidForTime = !(msg.type === 'system' || msg.type === 'call-event');
+
+    // 微信风格：间隔超过8分钟在中间显示小灰字时间
+    if (isValidForTime && settings.timeFormat !== 'off') {
+        const currentTs = new Date(msg.timestamp).getTime();
+        const EIGHT_MINUTES = 8 * 60 * 1000;
+        if (lastTimeRef.current === null || currentTs - lastTimeRef.current >= EIGHT_MINUTES) {
+            const timeSeparator = document.createElement('div');
+            timeSeparator.className = 'time-separator';
+            
+            const ts = new Date(msg.timestamp);
+            let timeStr;
+            const fmt = settings.timeFormat || 'HH:mm';
+            if (fmt === 'HH:mm:ss') {
+                timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            } else if (fmt === 'h:mm AM/PM') {
+                timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            } else if (fmt === 'h:mm:ss AM/PM') {
+                timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+            } else {
+                timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
+            timeSeparator.innerHTML = `<span>${timeStr}</span>`;
+            fragment.appendChild(timeSeparator);
+            lastSenderRef.current = null; // 出现时间分隔符，重置发送者分组
+        }
+        lastTimeRef.current = currentTs; // 更新基准时间为当前消息
     }
 
     if (msg.type === 'system') {
@@ -1110,17 +1141,6 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         return fragment;
     }
        
-    let showTimestamp = true;
-    if (settings.timeFormat === 'off') {
-        showTimestamp = false;
-    } else if (nextMsg) {
-        const currentTs = new Date(msg.timestamp).getTime();
-        const nextTs = new Date(nextMsg.timestamp).getTime();
-        if (nextMsg.sender === msg.sender && nextMsg.type !== 'system' && (nextTs - currentTs < 60000)) {
-            showTimestamp = false;
-        }
-    }
-
     let isLastInSenderGroup = true;
     if (nextMsg) {
         const currentTs = new Date(msg.timestamp).getTime();
@@ -1223,22 +1243,7 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     actionsDiv.innerHTML = actionsHTML;
 
     let metaHTML = '';
-    if (showTimestamp) {
-        const ts = new Date(msg.timestamp);
-        let timeStr;
-        const fmt = settings.timeFormat || 'HH:mm';
-        if (fmt === 'HH:mm:ss') {
-            timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        } else if (fmt === 'h:mm AM/PM') {
-            timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        } else if (fmt === 'h:mm:ss AM/PM') {
-            timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-        } else {
-            timeStr = ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        }
-        metaHTML += `<div class="timestamp">${timeStr}</div>`;
-    }
-
+    // 移除原有的气泡底部时间戳逻辑，只保留已读回执
     if (msg.sender === 'user' && settings.readReceiptsEnabled && isLastInSenderGroup) {
         const rrStyle = settings.readReceiptStyle || 'icon';
         if (rrStyle === 'text') {
@@ -1256,16 +1261,10 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     if (metaHTML !== '') {
         const metaDiv = document.createElement('div');
         metaDiv.className = 'message-meta';
-        if (!showTimestamp && !metaHTML.includes('timestamp')) {
-            metaDiv.style.height = 'auto';
-            metaDiv.style.marginTop = '2px';
-            if (settings.inChatAvatarPosition !== 'top') {
-                avatarDiv.style.marginBottom = '18px';
-            }
-        } else {
-            if (settings.inChatAvatarPosition !== 'top') {
-                avatarDiv.style.marginBottom = '26px';
-            }
+        metaDiv.style.height = 'auto';
+        metaDiv.style.marginTop = '2px';
+        if (settings.inChatAvatarPosition !== 'top') {
+            avatarDiv.style.marginBottom = '18px';
         }
         metaDiv.innerHTML = metaHTML;
         contentWrapper.append(actionsDiv, messageDiv, metaDiv);
@@ -1325,10 +1324,12 @@ function renderMessages(preserveScroll = false) {
     fragment.appendChild(spacer);
 
     let lastSenderRef = { current: null };
+    let lastTimeRef = { current: null }; // 用来记录上一次显示时间的时间戳
+    
     msgsToRender.forEach((msg, i) => {
         const prevMsg = i > 0 ? msgsToRender[i - 1] : (startIndex > 0 ? messages[startIndex - 1] : null);
         const nextMsg = i < msgsToRender.length - 1 ? msgsToRender[i + 1] : null;
-        const msgFragment = createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef);
+        const msgFragment = createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef);
         fragment.appendChild(msgFragment);
     });
 
