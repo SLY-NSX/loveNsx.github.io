@@ -10926,21 +10926,24 @@
 #call-reply-menu button {
     width: 100% !important;
     padding: 16px 10px !important;
-    /* 强制按钮背景使用主背景色 */
-    background-color: var(--primary-bg) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    /* 强制文字颜色跟随主题 */
-    color: var(--text-primary) !important;
-    font-size: 16px !important;
+    /* 按钮背景使用主题强调色 */
+    background-color: var(--accent-color) !important;
+    border: 1px solid var(--accent-color) !important;
+    border-radius: 16px !important; /* 稍微增大圆角，更像气泡 */
+    /* 强制文字颜色为黑色 */
+    color: #1a1a1a !important;
+    font-size: 15px !important; /* 稍微缩小字体，更秀气 */
+    font-weight: 500 !important;
     text-align: center !important;
     cursor: pointer !important;
     font-family: var(--font-family) !important;
-    transition: background-color 0.15s, transform 0.1s !important;
+    transition: filter 0.15s, transform 0.1s !important;
+    box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.25) !important; /* 加点阴影增加悬浮感 */
 }
 
 #call-reply-menu button:active {
-    background-color: var(--border-color) !important;
+    /* 按下时稍微变暗 */
+    filter: brightness(0.92) !important;
     transform: scale(0.98) !important;
 }
 
