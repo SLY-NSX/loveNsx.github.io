@@ -972,7 +972,7 @@
         }
 
         .message {
-            padding: 12px 18px;
+            padding: 9px 14px;
             border-radius: var(--radius);
             word-wrap: break-word;
             line-height: var(--message-line-height);
@@ -10946,6 +10946,7 @@
     transform: scale(0.98) !important;
 }
 
+
 /* === 电话气泡消息样式 === */
 .call-bubble-wrapper {
     margin-bottom: 10px !important;
@@ -10961,8 +10962,7 @@
 .call-bubble-message {
     display: inline-flex !important;
     align-items: center !important;
-    padding: 9px 14px !important;
-    border-radius: 16px !important;
+    /* 移除了 padding 和 border-radius 的 !important，现在它完全跟随普通消息的 9px 14px */
     box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
     cursor: default !important;
     pointer-events: auto;
@@ -10971,39 +10971,38 @@
     background-color: var(--message-sent-bg) !important;
     background: var(--message-sent-bg) !important;
 }
+
 .call-bubble-message.message-received {
     background-color: var(--message-received-bg) !important;
     background: var(--message-received-bg) !important;
-}
-.call-bubble-message.call-bubble-interactive {
-    cursor: pointer !important;
-    transition: transform 0.15s, filter 0.15s !important;
-}
-.call-bubble-message.call-bubble-interactive:active {
-    transform: scale(0.96) !important;
-    filter: brightness(0.95) !important;
 }
 html[data-theme="dark"] .call-bubble-message.message-sent {
     background-color: var(--accent-color-dark, var(--accent-color)) !important;
     background: var(--accent-color-dark, var(--accent-color)) !important;
 }
+
 .call-bubble-inner {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    line-height: 1;
+    line-height: var(--message-line-height); /* 跟随系统行高 */
     white-space: nowrap;
 }
 .call-bubble-icon {
-    font-size: 12px;
+    font-size: 1em; /* 1em 表示跟随当前字体大小，系统改多大它就多大 */
     opacity: 0.9;
     flex-shrink: 0;
 }
 .call-bubble-text {
-    font-size: 13px;
-    font-weight: 500;
+    /* 删除了 font-size 和 font-weight，现在它继承普通消息的字体设置 */
     letter-spacing: 0.2px;
     white-space: nowrap;
+}
+
+/* 修复：call-bubble 出现时隐藏可能残留的 meta-actions */
+.call-bubble-wrapper .message-meta-actions,
+.call-bubble-wrapper .message-meta {
+    display: none !important;
 }
 .call-bubble-message.message-sent .call-bubble-icon,
 .call-bubble-message.message-sent .call-bubble-text {
