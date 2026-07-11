@@ -1021,9 +1021,95 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         callEvDiv.innerHTML = `<div class="call-event-pill ${colorClass}"><i class="fas ${icon} call-event-icon"></i><span class="call-event-label">${msg.text.replace(/ · .*/, '')}</span>${detail}<button class="call-event-delete" title="删除" onclick="(function(btn){const id=btn.closest('[data-id]').dataset.id;const idx=messages.findIndex(m=>String(m.id)===String(id));if(idx>-1){messages.splice(idx,1);renderMessages();throttledSaveData();}})(this)"><i class="fas fa-times"></i></button></div>`;
         fragment.appendChild(callEvDiv);
         lastSenderRef.current = 'system';
-        return fragment;
+        return fragment; 
     }
 
+    if (msg.type === 'call-bubble') {
+        const wrapper = document.createElement('div');
+        wrapper.className = `message-wrapper ${msg.sender === 'user' ? 'sent' : 'received'} call-bubble-wrapper`;
+        wrapper.dataset.id = msg.id;
+        wrapper.dataset.msgId = msg.id;
+
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'message-avatar';
+        if (settings.inChatAvatarEnabled) {
+            const isUser = msg.sender === 'user';
+            const avatarElement = isUser ? DOMElements.me.avatar : DOMElements.partner.avatar;
+            const frameSettings = isUser ? settings.myAvatarFrame : settings.partnerAvatarFrame;
+            const avatarShape = isUser ? (settings.myAvatarShape || 'circle') : (settings.partnerAvatarShape || 'circle');
+            avatarDiv.innerHTML = avatarElement.innerHTML;
+            if (typeof applyAvatarFrame === 'function') applyAvatarFrame(avatarDiv, frameSettings);
+            ['circle', 'square', 'pentagon', 'heart'].forEach(s => avatarDiv.classList.remove('shape-' + s));
+            if (avatarShape !== 'none') avatarDiv.classList.add('shape-' + avatarShape);
+            if (settings.inChatAvatarPosition !== 'top') {
+                avatarDiv.style.marginBottom = '0px';
+            }
+        } else {
+            avatarDiv.style.display = 'none';
+        }
+        wrapper.appendChild(avatarDiv);
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'message-content-wrapper call-bubble-content-wrapper';
+
+        // 通话气泡不显示对方名字（即便是开启状态）
+        // 也不显示时间戳/meta 等
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message call-bubble-message message-${msg.sender === 'user' ? 'sent' : 'received'}`;
+        if (msg.callOptions && msg.callOptions.length > 0) {
+            messageDiv.classList.add('call-bubble-interactive');
+        }
+    
+        const callIcon = msg.callIcon || 'fa-phone';
+        const callText = msg.text || '';
+        messageDiv.innerHTML = 
+            '<div class="call-bubble-inner">' +
+                '<i class="fas ' + callIcon + ' call-bubble-icon"></i>' +
+                '<span class="call-bubble-text">' + callText + '</span>' +
+            '</div>';
+
+        // 仅 partner 气泡且带 options 时才可点击弹菜单
+        if (msg.callOptions && msg.callOptions.length > 0) {
+            (function(opts) {
+                messageDiv.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (typeof window.showCallBubbleMenu === 'function') {
+                        window.showCallBubbleMenu(opts, messageDiv);
+                    }
+                });
+                messageDiv.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+            })(msg.callOptions);
+            messageDiv.style.userSelect = 'none';
+            messageDiv.style.webkitUserSelect = 'none';
+        } else {
+            // 完全无互动：屏蔽点击和长按
+            messageDiv.style.userSelect = 'none';
+            messageDiv.style.webkitUserSelect = 'none';
+            messageDiv.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+        }
+
+        contentWrapper.appendChild(messageDiv);
+        wrapper.appendChild(contentWrapper);
+        fragment.appendChild(wrapper);
+
+        // 更新 lastSenderRef
+        if (msg.sender === 'user') {
+            lastSenderRef.current = 'user';
+        } else {
+            lastSenderRef.current = settings.partnerName || '对方';
+        }
+        return fragment;
+    }
+       
     let showTimestamp = true;
     if (settings.timeFormat === 'off') {
         showTimestamp = false;
@@ -1327,6 +1413,61 @@ const addMessage = (message) => {
             });
         };
 
+window._addCallBubble = (icon, text, sender, options) => {
+    addMessage({
+        id: Date.now() + Math.random(),
+        sender: sender,
+        text: text,
+        timestamp: new Date(),
+        status: sender === 'user' ? 'sent' : 'received',
+        type: 'call-bubble',
+        callIcon: icon || 'fa-phone',
+        callInteractive: !!(options && options.length),
+        callOptions: options || null,
+        favorited: false,
+        note: null,
+    });
+};
+
+window.showCallBubbleMenu = function(options, anchorEl) {
+    let menu = document.getElementById('call-reply-menu');
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'call-reply-menu';
+        document.body.appendChild(menu);
+    }
+    menu.innerHTML = '';
+    
+    let closeHandler = null;
+    
+    options.forEach(optText => {
+        const btn = document.createElement('button');
+        btn.textContent = optText;
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            // 选择后以类似系统那样中间弹出
+            if (typeof window._addCallEvent === 'function') {
+                window._addCallEvent('', optText, null);
+            }
+            menu.style.display = 'none';
+            if (closeHandler) {
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        menu.appendChild(btn);
+    });
+    
+    menu.style.display = 'flex';
+    
+    closeHandler = function(ev) {
+        if (!menu.contains(ev.target) && (!anchorEl || !anchorEl.contains(ev.target))) {
+            menu.style.display = 'none';
+            document.removeEventListener('click', closeHandler);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 100);
+};
+
         function optimizeImage(file, maxWidth = 800, quality = 0.7) {
             return new Promise((resolve, reject) => {
                 if (file.size < 300 * 1024) {
@@ -1449,8 +1590,6 @@ const addMessage = (message) => {
             const pokeText = (typeof window._formatPartnerPokeText === 'function')
                 ? window._formatPartnerPokeText(`${partnerName} ${finalPokeText}`)
                 : `${partnerName} ${finalPokeText}`;
-
-            addMessage({ id: Date.now(), text: pokeText, timestamp: new Date(), type: 'system' });
 
             addMessage({ id: Date.now(), text: pokeText, timestamp: new Date(), type: 'system' });
             if (typeof playSound === 'function') playSound('partner_poke');
@@ -1806,7 +1945,7 @@ window._pendingTask = null;
 
             // 2. 确定回复，显示“正在输入”，计算总思考时间
             showTypingIndicator();
-            const recentUserMsgs = settings.replyEnabled ? messages.filter(m => m.sender === 'user' && m.text).slice(-10) : [];
+            const recentUserMsgs = settings.replyEnabled ? messages.filter(m => m.sender === 'user' && m.text && m.type !== 'call-bubble' && m.type !== 'call-event').slice(-10) : [];
             
             const _delayRange = settings.replyDelayMax - settings.replyDelayMin;
             const _decrement = (typeof settings.replyDelayDecrement === 'number' && !isNaN(settings.replyDelayDecrement)) 
