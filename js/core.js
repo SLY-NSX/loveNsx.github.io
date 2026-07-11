@@ -1215,10 +1215,6 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
 
     let messageHTML = '';
     let replyHTML = '';
-
-    let messageHTML = '';
-    let replyHTML = '';
-
     // 1. 提取引用信息
     if (msg.replyTo) {
         const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
