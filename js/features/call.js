@@ -867,13 +867,36 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     }
 
     // 定时检查对方是否随机挂断
+    // 定时检查对方是否随机挂断
     function scheduleNextHangupCheck() {
         clearTimeout(S.hangupCheckTimer);
-        // 【测试】2分钟 100% 挂断
+        
+        /* ====== 测试逻辑：2分钟内50%主动挂断，50%意外关闭 ====== */
         S.hangupCheckTimer = setTimeout(() => {
             if (!S.active) return;
-            endCall(true); // 100% 概率对方挂断
-        }, 120000); // 120000毫秒 = 2分钟
+            if (Math.random() < 0.5) {
+                endCall(true); // 50% 主动挂断
+            } else {
+                _handleAccidentClose('partner'); // 50% 意外挂断 (挂对方)
+            }
+        }, 120000); // 2分钟
+        /* ====== 测试逻辑结束 ====== */
+
+
+        /* ====== 正式逻辑：22~38分内 5%主动，0.5%意外，94.5%继续 ======
+        const nextCheck = (22 + Math.random() * 16) * 60 * 1000; 
+        S.hangupCheckTimer = setTimeout(() => {
+            if (!S.active) return;
+            const roll = Math.random();
+            if (roll < 0.05) {
+                endCall(true); // 5% 主动挂断
+            } else if (roll < 0.055) {
+                _handleAccidentClose('partner'); // 0.5% 意外挂断 (挂对方)
+            } else {
+                scheduleNextHangupCheck(); // 94.5% 继续
+            }
+        }, nextCheck);
+        ====== 正式逻辑结束 ====== */
     }
 
     // 开始每秒暂存通话状态，防止意外中断丢失记录
@@ -904,10 +927,13 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             const stateStr = localStorage.getItem(ACCIDENT_KEY);
             if (stateStr) {
                 const state = JSON.parse(stateStr);
-                // 如果有记录，说明上一次是非正常退出
                 if (state.d > 0) {
-                    // 意外中断：保持以系统消息方式中间弹出（合并成一条）
-                    sendCallEvent('fa-phone-slash', '上次通话意外中断', `通话时长 ${fmt(state.d)}`);
+                    // 真意外退出：气泡挂在“我”这边
+                    if (typeof window._addCallBubble === 'function') {
+                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', null);
+                    } else {
+                        sendCallEvent('fa-phone-slash', `通话中断 ${fmt(state.d)}`, null);
+                    }
                 }
                 localStorage.removeItem(ACCIDENT_KEY);
             }
@@ -975,7 +1001,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                         const lbl = `${partnerName}拒绝${myName}的来电`;
                         sendCallEvent('fa-phone-slash', lbl, null);
                     }
-                    if (typeof showNotification === 'function') showNotification(`${partnerName}拒绝了你的来电`, 'info', 3000);
 
                     triggerAutoPartnerReply('reject'); // 18秒后自动以系统消息方式弹出原因解释
                 } else {
@@ -999,7 +1024,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                             const lbl = `${partnerName}未接听${myName}的来电`;
                             sendCallEvent('fa-phone-slash', lbl, null);
                         }
-                        if (typeof showNotification === 'function') showNotification(`${partnerName}未接听你的来电`, 'info', 3000);
 
                         triggerAutoPartnerReply('missed'); // 18秒后自动以系统消息方式弹出原因解释
                     }, remaining);
@@ -1077,6 +1101,38 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                     : `${myName}选择结束通话`;
                 window._sendPartnerNotification(partnerName, lbl);
             }
+        }
+    }
+
+    // 【新增】处理意外中断：关闭界面并发送无交互气泡
+    function _handleAccidentClose(bubbleSender) {
+        if (!S.active) return;
+        const dur = S.elapsed;
+        
+        S.active = false; S.startTime = null;
+        cancelAnimationFrame(S.timerRAF);
+        clearTimeout(S.connectingTimer); 
+        clearTimeout(S.incomingTimer);
+        clearTimeout(S.missedCallTimer);
+        clearTimeout(S.hangupCheckTimer);
+
+        clearStateSave(); 
+        window.CallRing.stop(); 
+
+        ['call-window','call-mini-pill','call-incoming-overlay'].forEach(id => {
+            const e = document.getElementById(id);
+            if (e) { e.classList.remove('visible'); if (id === 'call-window') e.classList.remove('immersive'); }
+        });
+        const body = document.getElementById('call-window-body');
+        const conn = document.getElementById('call-connecting-state');
+        if (body) body.style.display = '';
+        if (conn) conn.classList.remove('visible');
+        S.immersive = false;
+
+        if (typeof window._addCallBubble === 'function') {
+            window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(dur)}`, bubbleSender, null);
+        } else {
+            sendCallEvent('fa-phone-slash', `通话中断 ${fmt(dur)}`, null);
         }
     }
 
