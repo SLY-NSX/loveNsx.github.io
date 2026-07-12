@@ -10876,12 +10876,16 @@
     }
     .message-input {
         flex: 1;
-        min-height: 44px;
-        padding: 12px 20px;
+        min-height: 38px;      
+        padding: 8px 16px;   
     }
     .input-area {
-        padding: 10px 12px;
-        gap: 10px;
+        padding: 6px 10px;  
+        gap: 8px;             
+    }
+    .input-btn {
+        width: 34px !important; 
+        height: 34px !important;
     }
 }
 
