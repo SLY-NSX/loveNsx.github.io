@@ -869,23 +869,20 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     // 定时检查对方是否随机挂断
     function scheduleNextHangupCheck() {
         clearTimeout(S.hangupCheckTimer);
-        
-        // 正式逻辑：22~38分内 5%主动，0.5%意外，94.5%继续
         const nextCheck = (22 + Math.random() * 16) * 60 * 1000; 
         S.hangupCheckTimer = setTimeout(() => {
             if (!S.active) return;
             const roll = Math.random();
             if (roll < 0.05) {
-                endCall(true); // 5% 主动挂断
+                endCall(true); 
             } else if (roll < 0.055) {
-                _handleAccidentClose('partner'); // 0.5% 意外挂断 (挂对方)
+                _handleAccidentClose('partner'); 
             } else {
-                scheduleNextHangupCheck(); // 94.5% 继续
+                scheduleNextHangupCheck(); 
             }
         }, nextCheck);
     }
 
-    // 开始每秒暂存通话状态，防止意外中断丢失记录
     // 开始每秒暂存通话状态，防止意外中断丢失记录
     function startStateSave() {
         clearInterval(S.stateSaveTimer);
@@ -900,7 +897,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             } catch(e) {}
         };
         save(); // 立即保存一次
-        S.stateSaveTimer = setInterval(save, 1000);
+        S.stateSaveTimer = setInterval(save, 3000);
     }
 
     // 清除暂存状态
@@ -921,8 +918,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                     
                     // 真意外退出：气泡挂在“我”这边
                     if (typeof window._addCallBubble === 'function') {
-                        // 注意：第四个参数是 null（按钮），第五个参数是 accidentTime（5点的时间戳）
-                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', null, accidentTime);
+                        // 【修改】把 accidentTime 传进去作为第四个参数
+                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', accidentTime);
                     } else {
                         sendCallEvent('fa-phone-slash', `通话中断 ${fmt(state.d)}`, null);
                     }
@@ -956,29 +953,25 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         clearTimeout(S.missedCallTimer);
 
         if (!isPartner) {
-            // 我方发起播放铃声
             window.CallRing.play('my');
             
-            // 1~30秒内掷骰子
             const reactDelay = 1000 + Math.random() * 29000;
             S.connectingTimer = setTimeout(() => {
                 if (!S.active) return;
-                window.CallRing.stop(); // 状态变更，停止铃声
+                window.CallRing.stop(); 
                 
                 const roll = Math.random();
                 const myName = getMyName();
                 const partnerName = getName();
                 
                 if (roll < 0.65) {
-                    // 65% 接通
                     S.startTime = Date.now();
                     if (conn) conn.classList.remove('visible');
                     if (body) body.style.display = '';
                     tick();
-                    startStateSave(); // 开始记录防意外遗言
-                    scheduleNextHangupCheck(); // 开启随机挂断检查
+                    startStateSave(); 
+                    scheduleNextHangupCheck(); 
                 } else if (roll < 0.95) {
-                    // 30% 对方拒接
                     S.active = false;
                     cancelAnimationFrame(S.timerRAF);
                     const winEl = document.getElementById('call-window');
@@ -997,7 +990,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
 
                     triggerAutoPartnerReply('reject'); // 18秒后自动以系统消息方式弹出原因解释
                 } else {
-                    // 5% 未接听，一直等到满 30秒
                     const remaining = 30000 - reactDelay;
                     S.missedCallTimer = setTimeout(() => {
                         if (!S.active) return;
@@ -1164,15 +1156,11 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     function scheduleRandomCall() {
         clearTimeout(S.randomCallTimer);
         if (!S.enabled) return;
-        // === 临时测试代码：60秒后 100% 概率来电 ===
-        const ms = 60000; 
+        const ms = (30 + Math.random() * 45) * 60 * 1000; // 30-75分钟
         S.randomCallTimer = setTimeout(() => {
-            if (S.enabled && !S.active) showIncomingCall(); // 100%触发
-            // 测试完毕后，记得把这里改回 scheduleRandomCall(); 
-            // 或者直接把整个函数替换回原来的版本
-            scheduleRandomCall(); 
+            if (S.enabled && !S.active && Math.random() < 0.25) showIncomingCall();
+            scheduleRandomCall();
         }, ms);
-        // === 临时测试代码结束 ===
     }
 
     function minimizeWindow() {
