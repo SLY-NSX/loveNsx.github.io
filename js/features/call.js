@@ -886,6 +886,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     }
 
     // 开始每秒暂存通话状态，防止意外中断丢失记录
+    // 开始每秒暂存通话状态，防止意外中断丢失记录
     function startStateSave() {
         clearInterval(S.stateSaveTimer);
         const save = () => {
@@ -893,7 +894,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 localStorage.setItem(ACCIDENT_KEY, JSON.stringify({
                     m: getMyName(),
                     p: getName(),
-                    d: S.elapsed
+                    d: S.elapsed,
+                    t: Date.now()  // 【新增这一行】记录最后存活的时间戳
                 }));
             } catch(e) {}
         };
@@ -914,9 +916,13 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             if (stateStr) {
                 const state = JSON.parse(stateStr);
                 if (state.d > 0) {
+                    // 【新增】推算中断时间：如果有记录最后存活时间(5点)就用它，没有就用当前时间(7点)
+                    const accidentTime = state.t ? new Date(state.t) : new Date();
+                    
                     // 真意外退出：气泡挂在“我”这边
                     if (typeof window._addCallBubble === 'function') {
-                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', null);
+                        // 【修改】把 accidentTime 传进去作为第四个参数
+                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', accidentTime);
                     } else {
                         sendCallEvent('fa-phone-slash', `通话中断 ${fmt(state.d)}`, null);
                     }
@@ -927,7 +933,6 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             localStorage.removeItem(ACCIDENT_KEY);
         }
     }
-
     function startCall(isPartner) {
         if (!S.enabled) return;
         S.active = true; S.startTime = null; S.elapsed = 0;
