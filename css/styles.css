@@ -796,6 +796,7 @@
             justify-content: center;
             gap: 2px;
             min-width: 52px;
+            margin-top: 3px;
         }
 
         .avatar:hover {
@@ -11063,75 +11064,82 @@ body.with-background .time-separator span {
     -webkit-backdrop-filter: blur(4px);
 }
 
-/* === 顶部栏排版新定制 === */
+/* === 顶部栏排版终极定制 === */
 
-/* 1. 整体布局：格言下移，去留白，上提对齐状态 (PC和手机端通用) */
+/* 引入花字网络字体（修复了字体名不一致的问题，统一使用站酷黄油体） */
+@import url('https://fonts.googleapis.cn/css2?family=ZCOOL+QingKe+HuangYou&display=swap');
+
 .header {
     flex-direction: column;
 }
-.header-motto {
-    order: 2;
-    padding: 0px 24px !important;
-    margin-top: -6px !important; /* 👈 控制格言和状态水平对齐，若没对齐改这个 */
-    margin-bottom: 6px !important;
-}
 
-/* 2. 格言字体调大 (全局) */
-.header-motto {
-    font-size: 14px !important; /* 原默认12px，调大到14px */
-}
-
-/* 3. 名字与状态的字体效果互换，名字颜色随系统变色 (全局) */
+/* 全局：名字状态换位及颜色 */
 .username {
-    color: var(--accent-color) !important; /* 颜色随系统变换 */
-    font-size: 10px !important;            /* 原状态大小 */
-    font-weight: 500 !important;           /* 原状态粗细 */
+    color: var(--accent-color) !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
 }
 .status {
-    font-size: 11.5px !important;          /* 原名字大小 */
-    font-weight: 600 !important;           /* 原名字粗细，比名字更清晰 */
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
 }
 
-/* 4. 手机端单独调整 */
-@media (max-width: 768px) {
-    /* 第一条：左右向中间提，向上提一点（仅手机端） */
-    .header-inner {
-        padding: 2px 8px 0px !important; /* 上下变薄，左右往里收 */
-        max-width: 420px !important;     /* 强制收窄，让两侧向中间靠 */
-    }
-    
-    /* 第三条：单独把格言往上拉，破坏同一水平也可以 */
-    .header-motto {
-        margin-top: -14px !important; /* 👈 从 -6px 改为 -14px，手机端单独拉高 */
-        margin-bottom: 8px !important;
-        font-size: 11px !important;   /* 手机端原9px/8px，这里调大到11px保证可见 */
-    }
-}
-
-/* === 引入花字网络字体 === */
-@import url('https://fonts.googleapis.cn/css2?family=ZCOOL+QingKe+HuangYou&display=swap');
-
-/* === 格言字体花字定制 (覆盖之前的格言设置) === */
+/* 全局：格言花字定制 */
 .header-motto {
     order: 2;
     padding: 0px 24px !important;
-    margin-top: -6px !important; 
-    margin-bottom: 6px !important;
-    
-    /* 字体相关 */
-    font-family: 'Ma Shan Zheng', cursive !important; /* 花字字体 */
-    font-size: 14px !important; /* 因为是花字，稍微放大一点更好看 (原14px) */
-    font-weight: normal !important; /* 这个字体自带加粗感，不需要额外加粗 */
-    letter-spacing: 4px !important; /* 花字通常字间距拉开一点更有味道 */
-    opacity: 0.85 !important; /* 稍微降低一点透明度，防止花字太抢眼 */
+    font-family: 'ZCOOL QingKe HuangYou', cursive !important;/* 花字字体 */
+    font-size: 16px !important; /* 花字稍微放大点更好看 */
+    font-weight: normal !important; 
+    letter-spacing: 4px !important;
+    opacity: 0.85 !important;
 }
 
-/* 手机端格言字体微调 */
+/* --- 手机端专属微调 --- */
 @media (max-width: 768px) {
+    /* (1) 顶部栏厚度：增大 padding 的第一个数值变厚，减小变薄 */
+    .header-inner {
+        padding: 8px 10px !important; /* 8px是上下厚度，10px是左右厚度 */
+        max-width: 100% !important;   /* 撑满宽度，让左右两侧向两边分散 */
+        justify-content: space-between !important; /* 一左一右向两边分散 */
+    }
+    
+    /* (2) 一列三元素(头像/名字/状态)的位置及间距 */
+    .user-info {
+        gap: 3px !important;          /* 这列内部三个元素的间距 */
+        min-width: 50px !important;
+        margin-top: 2px !important;   /* 增加 px 往下移，负值往上移 */
+    }
+    .avatar-container {
+        width: 36px !important;       /* 头像大小 */
+        height: 36px !important;
+    }
+    .avatar {
+        width: 42px !important;
+        height: 42px !important;
+    }
+    .username {
+        max-width: 60px !important;   /* 名字长度限制 */
+    }
+
+    /* (3) 顶部栏按键大小，排列高度，间距 */
+    .header-actions {
+        gap: 8px !important;          /* 按键之间的间距 */
+        align-items: center !important; /* 排列高度对齐方式 */
+        margin-top: 0px !important;   /* 增加 px 往下移，负值往上移 */
+    }
+    .action-btn {
+        width: 34px !important;       /* 按键大小 */
+        height: 34px !important;
+        font-size: 15px !important;   /* 按键图标大小 */
+    }
+
+    /* (4) 格言字体大小，放置高度，与上排按键的间距 */
     .header-motto {
-        margin-top: -14px !important; 
-        margin-bottom: 8px !important;
-        font-size: 13px !important; /* 手机端花字稍微缩小 */
+        font-size: 12px !important;   /* 手机端格言字体大小 */
+        margin-top: -4px !important;  /* 放置高度：负值往上拉，正值往下放 */
+        margin-bottom: 6px !important;/* 与底部/上排按键的间距 */
+        padding: 0 15px !important;
         letter-spacing: 3px !important;
     }
 }
