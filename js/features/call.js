@@ -921,8 +921,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                     
                     // 真意外退出：气泡挂在“我”这边
                     if (typeof window._addCallBubble === 'function') {
-                        // 【修改】把 accidentTime 传进去作为第四个参数
-                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', accidentTime);
+                        // 注意：第四个参数是 null（按钮），第五个参数是 accidentTime（5点的时间戳）
+                        window._addCallBubble('fa-phone-slash', `通话中断 ${fmt(state.d)}`, 'user', null, accidentTime);
                     } else {
                         sendCallEvent('fa-phone-slash', `通话中断 ${fmt(state.d)}`, null);
                     }
