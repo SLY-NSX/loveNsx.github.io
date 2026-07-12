@@ -1427,12 +1427,12 @@ const addMessage = (message) => {
             });
         };
 
-window._addCallBubble = (icon, text, sender, options) => {
+window._addCallBubble = (icon, text, sender, options, time) => {
     addMessage({
         id: Date.now() + Math.random(),
         sender: sender,
         text: text,
-        timestamp: new Date(),
+        timestamp: time ? new Date(time) : new Date(),  // 如果传了time就用time，没传就用当前时间
         status: sender === 'user' ? 'sent' : 'received',
         type: 'call-bubble',
         callIcon: icon || 'fa-phone',
