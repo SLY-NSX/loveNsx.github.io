@@ -1277,6 +1277,17 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         }
     }
 
+    // 优先提取被引用消息的节点，以便调整插入顺序
+    let replyWrapper = null;
+    if (typeof replyHTML !== 'undefined' && replyHTML) {
+        replyWrapper = document.createElement('div');
+        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
+        // 间距放在这里，不污染内部竖线的高度
+        replyWrapper.style.marginTop = '4px'; 
+        replyWrapper.innerHTML = replyHTML;
+    }
+
+    // 组装顺序：悬浮按钮 -> 气泡 -> 被引用消息(如果有) -> 已读状态(如果有)
     if (metaHTML !== '') {
         const metaDiv = document.createElement('div');
         metaDiv.className = 'message-meta';
@@ -1286,19 +1297,17 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
             avatarDiv.style.marginBottom = '18px';
         }
         metaDiv.innerHTML = metaHTML;
-        contentWrapper.append(actionsDiv, messageDiv, metaDiv);
-    } else {
+        
+        // 先塞入 悬浮按钮 和 气泡
         contentWrapper.append(actionsDiv, messageDiv);
-    }
-
-    // --- 新增：如果有被引用消息，作为兄弟节点插在气泡下方，彻底脱离气泡！ ---
-    if (typeof replyHTML !== 'undefined' && replyHTML) {
-        const replyWrapper = document.createElement('div');
-        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
-        // 间距放在这里，不污染内部竖线的高度
-        replyWrapper.style.marginTop = '4px'; 
-        replyWrapper.innerHTML = replyHTML;
-        contentWrapper.appendChild(replyWrapper);
+        // 如果有被引用消息，塞在被引用消息
+        if (replyWrapper) contentWrapper.appendChild(replyWrapper);
+        // 最后塞入 已读标记
+        contentWrapper.appendChild(metaDiv);
+    } else {
+        // 没有已读标记的情况
+        contentWrapper.append(actionsDiv, messageDiv);
+        if (replyWrapper) contentWrapper.appendChild(replyWrapper);
     }
     wrapper.appendChild(contentWrapper);
     fragment.appendChild(wrapper);
