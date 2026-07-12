@@ -11099,7 +11099,7 @@ body.with-background .time-separator span {
 @media (max-width: 768px) {
     /* (1) 顶部栏厚度：增大 padding 的第一个数值变厚，减小变薄 */
     .header-inner {
-        padding: 4px 10px !important; /* 8px是上下厚度，10px是左右厚度 */
+        padding: 0px 10px !important; /* 8px是上下厚度，10px是左右厚度 */
         max-width: 100% !important;   /* 撑满宽度，让左右两侧向两边分散 */
         justify-content: space-between !important; /* 一左一右向两边分散 */
     }
