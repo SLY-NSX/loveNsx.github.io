@@ -11119,8 +11119,8 @@ body.with-background .time-separator span {
     margin-bottom: 6px !important;
     
     /* 字体相关 */
-    font-family: 'ZCOOL QingKe HuangYou', cursive !important; /* 花字字体 */
-    font-size: 16px !important; /* 因为是花字，稍微放大一点更好看 (原14px) */
+    font-family: 'Ma Shan Zheng', cursive !important; /* 花字字体 */
+    font-size: 14px !important; /* 因为是花字，稍微放大一点更好看 (原14px) */
     font-weight: normal !important; /* 这个字体自带加粗感，不需要额外加粗 */
     letter-spacing: 4px !important; /* 花字通常字间距拉开一点更有味道 */
     opacity: 0.85 !important; /* 稍微降低一点透明度，防止花字太抢眼 */
