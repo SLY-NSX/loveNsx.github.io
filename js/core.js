@@ -1228,10 +1228,40 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     }
 
     let messageHTML = '';
+
+    // 1. 先生成新消息的内容
+    const isImageOnly = !msg.text && !!msg.image;
+    let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
+    if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
+    messageHTML += content;
+
+    // 2. 再生成被引用消息（放在新消息下方）
     if (msg.replyTo) {
         const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
         const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
-        messageHTML += `<div class="reply-indicator" data-reply-id="${msg.replyTo.id || ''}" style="cursor:pointer;" onclick="scrollToQuotedMessage(this)"><span class="reply-indicator-sender">${repliedSender}</span><span class="reply-indicator-text">${repliedText}</span></div>`;
+        
+        // 判断当前新消息是不是"我"发的，决定竖线在左还是在右
+        // 如果你的数据里判断是不是本人不是用 msg.sender === 'user'，可以改成你实际的判断条件
+        const isMyMessage = msg.sender === 'user'; 
+        
+        // 我在右侧：竖线在右，所以用 row-reverse
+        // 对方在左侧：竖线在左，用默认 row
+        const flexStyle = isMyMessage ? 'flex-direction: row-reverse;' : 'flex-direction: row;';
+        
+        // 竖线颜色随系统：假设你的系统主题色存在 settings.themeColor 里，如果没有就用灰色 #aaa
+        const barColor = settings.themeColor || '#aaa';
+
+        messageHTML += `
+        <div class="custom-reply-card" 
+             data-reply-id="${msg.replyTo.id || ''}" 
+             style="cursor: pointer; max-width: 75vw; display: flex; ${flexStyle} align-items: flex-start; margin-top: 6px; padding: 0 2px;">
+            
+            <div style="width: 2px; min-height: 1.4em; align-self: stretch; background-color: ${barColor}; margin: 0 6px; flex-shrink: 0;"></div>
+            
+            <div style="color: #888; font-size: calc(var(--chat-font-size, 16px) - 2px); white-space: pre-wrap; word-break: break-all; line-height: 1.4; text-align: left;">
+                <span style="font-weight: 500;">${repliedSender}：</span><span>${repliedText}</span>
+            </div>
+        </div>`;
     }
 
     const isImageOnly = !msg.text && !!msg.image;
