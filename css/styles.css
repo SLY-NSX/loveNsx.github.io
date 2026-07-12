@@ -11027,12 +11027,6 @@ html[data-theme="dark"] .call-bubble-message.message-sent {
     .call-bubble-wrapper {
         max-width: 90% !important;
     }
-    .call-bubble-text {
-        font-size: 12.5px;
-    }
-    .call-bubble-icon {
-        font-size: 11px;
-    }
 }
 
 /* === 微信风格中间时间戳样式 === */
