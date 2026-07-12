@@ -1049,7 +1049,8 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         const isRejected = icon === 'fa-phone-slash';
         const colorClass = isRejected ? 'call-event-pill--rejected' : 'call-event-pill--ended';
         const detail = msg.callDetail ? `<span class="call-event-detail">${msg.callDetail}</span>` : '';
-        callEvDiv.innerHTML = `<div class="call-event-pill ${colorClass}"><i class="fas ${icon} call-event-icon"></i><span class="call-event-label">${msg.text.replace(/ · .*/, '')}</span>${detail}<button class="call-event-delete" title="删除" onclick="(function(btn){const id=btn.closest('[data-id]').dataset.id;const idx=messages.findIndex(m=>String(m.id)===String(id));if(idx>-1){messages.splice(idx,1);renderMessages();throttledSaveData();}})(this)"><i class="fas fa-times"></i></button></div>`;
+        // 👉 修改：注入 settings.bubbleStyle 类名
+        callEvDiv.innerHTML = `<div class="call-event-pill ${settings.bubbleStyle} ${colorClass}"><i class="fas ${icon} call-event-icon"></i><span class="call-event-label">${msg.text.replace(/ · .*/, '')}</span>${detail}<button class="call-event-delete" title="删除" onclick="(function(btn){const id=btn.closest('[data-id]').dataset.id;const idx=messages.findIndex(m=>String(m.id)===String(id));if(idx>-1){messages.splice(idx,1);renderMessages();throttledSaveData();}})(this)"><i class="fas fa-times"></i></button></div>`;
         fragment.appendChild(callEvDiv);
         lastSenderRef.current = 'system';
         return fragment; 
@@ -1087,7 +1088,8 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         // 也不显示时间戳/meta 等
 
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message call-bubble-message message-${msg.sender === 'user' ? 'sent' : 'received'}`;
+        // 👉 修改：在 call-bubble-message 后面加上 ${settings.bubbleStyle}
+        messageDiv.className = `message call-bubble-message ${settings.bubbleStyle} message-${msg.sender === 'user' ? 'sent' : 'received'}`;
         if (msg.callOptions && msg.callOptions.length > 0) {
             messageDiv.classList.add('call-bubble-interactive');
         }
