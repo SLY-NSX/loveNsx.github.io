@@ -11099,7 +11099,7 @@ body.with-background .time-separator span {
 @media (max-width: 768px) {
     /* (1) 顶部栏厚度：增大 padding 的第一个数值变厚，减小变薄 */
     .header-inner {
-        padding: 8px 10px !important; /* 8px是上下厚度，10px是左右厚度 */
+        padding: 6px 10px !important; /* 8px是上下厚度，10px是左右厚度 */
         max-width: 100% !important;   /* 撑满宽度，让左右两侧向两边分散 */
         justify-content: space-between !important; /* 一左一右向两边分散 */
     }
@@ -11108,7 +11108,7 @@ body.with-background .time-separator span {
     .user-info {
         gap: 3px !important;          /* 这列内部三个元素的间距 */
         min-width: 50px !important;
-        margin-top: 2px !important;   /* 增加 px 往下移，负值往上移 */
+        margin-top: 3px !important;   /* 增加 px 往下移，负值往上移 */
     }
     .avatar-container {
         width: 36px !important;       /* 头像大小 */
@@ -11124,7 +11124,7 @@ body.with-background .time-separator span {
 
     /* (3) 顶部栏按键大小，排列高度，间距 */
     .header-actions {
-        gap: 8px !important;          /* 按键之间的间距 */
+        gap: 6px !important;          /* 按键之间的间距 */
         align-items: center !important; /* 排列高度对齐方式 */
         margin-top: 0px !important;   /* 增加 px 往下移，负值往上移 */
     }
@@ -11136,7 +11136,7 @@ body.with-background .time-separator span {
 
     /* (4) 格言字体大小，放置高度，与上排按键的间距 */
     .header-motto {
-        font-size: 12px !important;   /* 手机端格言字体大小 */
+        font-size: 10px !important;   /* 手机端格言字体大小 */
         margin-top: -4px !important;  /* 放置高度：负值往上拉，正值往下放 */
         margin-bottom: 6px !important;/* 与底部/上排按键的间距 */
         padding: 0 15px !important;
