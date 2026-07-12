@@ -619,8 +619,8 @@ function showEmojiTab(area, isPartner, mode = 'all') {
 
     // 2. 渲染 表情包 (只有在 mode 为 'sticker' 或 'all' 时才显示)
     if (mode === 'sticker' || mode === 'all') {
-        // 注意：这里把 myStickerLibrary 改成了 window.stickerLibrary，和你之前上传的代码对应
-        const stickers = isPartner ? (window.partnerStickerLibrary || []) : (window.stickerLibrary || myStickerLibrary || []);
+        // 注意：去掉了 window.，直接读取全局的 stickerLibrary
+        const stickers = isPartner ? (window.partnerStickerLibrary || []) : (stickerLibrary || myStickerLibrary || []);
         stickers.forEach(src => {
             const item = document.createElement('div');
             item.className = 'picker-item';
