@@ -7558,7 +7558,7 @@
         }
         .avatar-container {
     position: relative;
-    width: 56px;
+    width: 45px;
     height: 56px;
     order: 2;
     flex-shrink: 0;
@@ -11084,11 +11084,11 @@ body.with-background .time-separator span {
 /* 3. 名字与状态的字体效果互换，名字颜色随系统变色 (全局) */
 .username {
     color: var(--accent-color) !important; /* 颜色随系统变换 */
-    font-size: 10px !important;            /* 原状态大小 */
+    font-size: 8px !important;            /* 原状态大小 */
     font-weight: 500 !important;           /* 原状态粗细 */
 }
 .status {
-    font-size: 11.5px !important;          /* 原名字大小 */
+    font-size: 10px !important;          /* 原名字大小 */
     font-weight: 600 !important;           /* 原名字粗细，比名字更清晰 */
 }
 
