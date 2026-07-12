@@ -1096,38 +1096,50 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         const contentWrapper = document.createElement('div');
         contentWrapper.className = 'message-content-wrapper call-bubble-content-wrapper';
 
-        // 通话气泡不显示对方名字（即便是开启状态）
-        // 也不显示时间戳/meta 等
-
-    const messageDiv = document.createElement('div');
-    if (isImageOnly) {
-        messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} message-image-bubble-none`;
-    } else {
-        messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle}`;
-    }
-    messageDiv.innerHTML = messageHTML;
-
-    // --- 新增：如果有被引用消息，组装成一个跟随气泡的 div ---
-    let replyWrapper = null;
-    if (typeof replyHTML !== 'undefined' && replyHTML) {
-        replyWrapper = document.createElement('div');
-        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
-        replyWrapper.style.marginTop = '4px'; // 和气泡保持一点距离
-        replyWrapper.style.padding = '0 4px'; // 稍微靠边一点对齐
-        replyWrapper.innerHTML = replyHTML;
-    }
-
-    // 1. 先把气泡放进去
-    contentWrapper.appendChild(messageDiv);
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message call-bubble-message ${settings.bubbleStyle} message-${msg.sender === 'user' ? 'sent' : 'received'}`;
+        if (msg.callOptions && msg.callOptions.length > 0) {
+            messageDiv.classList.add('call-bubble-interactive');
+        }
     
-    // 2. 如果有引用块，紧跟着气泡放进去（它俩成为兄弟节点，引用块没有气泡背景，就脱离视觉气泡了）
-    if (replyWrapper) {
-        contentWrapper.appendChild(replyWrapper);
-    }
+        const callIcon = msg.callIcon || 'fa-phone';
+        const callText = msg.text || '';
+        messageDiv.innerHTML = 
+            '<div class="call-bubble-inner">' +
+                '<i class="fas ' + callIcon + ' call-bubble-icon"></i>' +
+                '<span class="call-bubble-text">' + callText + '</span>' +
+            '</div>';
+
+        if (msg.callOptions && msg.callOptions.length > 0) {
+            (function(opts) {
+                messageDiv.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (typeof window.showCallBubbleMenu === 'function') {
+                        window.showCallBubbleMenu(opts, messageDiv);
+                    }
+                });
+                messageDiv.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+            })(msg.callOptions);
+            messageDiv.style.userSelect = 'none';
+            messageDiv.style.webkitUserSelect = 'none';
+        } else {
+            messageDiv.style.userSelect = 'none';
+            messageDiv.style.webkitUserSelect = 'none';
+            messageDiv.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+        }
+
+        contentWrapper.appendChild(messageDiv);
         wrapper.appendChild(contentWrapper);
         fragment.appendChild(wrapper);
 
-        // 更新 lastSenderRef
         if (msg.sender === 'user') {
             lastSenderRef.current = 'user';
         } else {
@@ -1223,10 +1235,7 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
         const isMyMessage = msg.sender === 'user'; 
         
-        // 颜色随系统：使用你的 --accent-color 变量
         const barColor = 'var(--accent-color, #aaa)';
-        
-        // 用 border 代替单独的竖线，高度自动随文字多寡适应
         let borderStyle = isMyMessage 
             ? `border-right: 2px solid ${barColor}; padding-right: 6px; margin-left: auto;` 
             : `border-left: 2px solid ${barColor}; padding-left: 6px; margin-right: auto;`;
@@ -1249,19 +1258,6 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     }
     messageDiv.innerHTML = messageHTML;
 
-    // --- 新增：把被引用消息作为兄弟节点插在气泡下方，彻底脱离气泡！ ---
-    if (typeof replyHTML !== 'undefined' && replyHTML) {
-        const replyWrapper = document.createElement('div');
-        // 跟随当前消息靠左或靠右对齐
-        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
-        // 让它和气泡有一点距离感
-        replyWrapper.style.marginTop = '2px';
-        replyWrapper.innerHTML = replyHTML;
-        
-        // 将引用块插在气泡的下方同级位置
-        messageDiv.insertAdjacentElement('afterend', replyWrapper);
-    }
-
     let actionsHTML = '';
     if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
     const starIcon = msg.favorited ? 'fas fa-star' : 'far fa-star';
@@ -1272,7 +1268,6 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     actionsDiv.innerHTML = actionsHTML;
 
     let metaHTML = '';
-    // 移除原有的气泡底部时间戳逻辑，只保留已读回执
     if (msg.sender === 'user' && settings.readReceiptsEnabled && isLastInSenderGroup) {
         const rrStyle = settings.readReceiptStyle || 'icon';
         if (rrStyle === 'text') {
@@ -1300,6 +1295,16 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     } else {
         contentWrapper.append(actionsDiv, messageDiv);
     }
+
+    // --- 新增：如果有被引用消息，作为兄弟节点插在气泡下方，彻底脱离气泡！ ---
+    if (typeof replyHTML !== 'undefined' && replyHTML) {
+        const replyWrapper = document.createElement('div');
+        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
+        replyWrapper.style.marginTop = '2px';
+        replyWrapper.innerHTML = replyHTML;
+        contentWrapper.appendChild(replyWrapper);
+    }
+
     wrapper.appendChild(contentWrapper);
     fragment.appendChild(wrapper);
 
