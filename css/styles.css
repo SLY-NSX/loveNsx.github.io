@@ -11062,3 +11062,26 @@ body.with-background .time-separator span {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
 }
+
+/* === 顶部栏排版定制（不改变元素大小） === */
+
+/* 确保顶部栏内部为垂直排列，方便控制上下 */
+.header {
+    flex-direction: column;
+}
+
+/* 1 & 4：整体变薄，左右向中间提 */
+.header-inner {
+    order: 1; /* 将用户区和按键区置于上方 */
+    padding: 4px 14px 0px !important; /* 上下变薄(4px和0px)，左右往中间收(14px) */
+    max-width: 500px !important; /* 稍微收窄整体宽度，强制左右向中间靠拢 (原来是560px) */
+    gap: 6px !important; /* 左右区块之间的间距 */
+}
+
+/* 2 & 3：格言下移并收紧，与状态水平对齐 */
+.header-motto {
+    order: 2; /* 将格言置于下方 */
+    padding: 0px 24px !important; /* 去掉原有的上下 8px 留白，让顶部栏更薄 */
+    margin-top: -6px !important; /* 关键：向上提一点，去对齐 status 的水平线 */
+    margin-bottom: 6px !important; /* 底部留一点呼吸空间，防止贴住聊天区 */
+}
