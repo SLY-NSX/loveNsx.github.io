@@ -1228,27 +1228,33 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     }
 
     let messageHTML = '';
+    let replyHTML = ''; // 新增一个专门存被引用消息的变量
 
-    // 1. 先生成新消息的内容
+    // 1. 先生成新消息的内容（留在气泡内）
     const isImageOnly = !msg.text && !!msg.image;
     let content = msg.text ? `<div>${msg.text.replace(/\n/g, '<br>')}</div>` : '';
     if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
     messageHTML += content;
 
-    // 2. 再生成被引用消息（放在新消息下方）
+    // 2. 再生成被引用消息（存入 replyHTML，稍后脱离气泡）
     if (msg.replyTo) {
         const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
         const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
         const isMyMessage = msg.sender === 'user'; 
-        const flexStyle = isMyMessage ? 'flex-direction: row-reverse;' : 'flex-direction: row;';
-        const barColor = settings.themeColor || '#aaa';
         
-        messageHTML += `
-        <div class="custom-reply-card" 
+        // 颜色随系统：使用你的 --accent-color 变量
+        const barColor = 'var(--accent-color, #aaa)';
+        
+        // 用 border 代替单独的竖线，高度自动随文字多寡适应
+        let borderStyle = isMyMessage 
+            ? `border-right: 2px solid ${barColor}; padding-right: 6px; margin-left: auto;` 
+            : `border-left: 2px solid ${barColor}; padding-left: 6px; margin-right: auto;`;
+
+        replyHTML = `
+        <div class="custom-reply-card-outside" 
              data-reply-id="${msg.replyTo.id || ''}" 
-             style="cursor: pointer; max-width: 75vw; display: flex; ${flexStyle} align-items: flex-start; margin-top: 6px; padding: 0 2px;">
-            <div style="width: 2px; min-height: 1.4em; align-self: stretch; background-color: ${barColor}; margin: 0 6px; flex-shrink: 0;"></div>
-            <div style="color: #888; font-size: calc(var(--chat-font-size, 16px) - 2px); white-space: pre-wrap; word-break: break-all; line-height: 1.4; text-align: left;">
+             style="cursor: pointer; max-width: 75vw; margin-top: 4px; ${borderStyle} display: inline-block;">
+            <div style="color: #888; font-size: calc(var(--font-size, 16px) - 2px); white-space: pre-wrap; word-break: break-all; line-height: 1.4; text-align: left;">
                 <span style="font-weight: 500;">${repliedSender}：</span><span>${repliedText}</span>
             </div>
         </div>`;
@@ -1261,6 +1267,19 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle}`;
     }
     messageDiv.innerHTML = messageHTML;
+
+    // --- 新增：把被引用消息作为兄弟节点插在气泡下方，彻底脱离气泡！ ---
+    if (typeof replyHTML !== 'undefined' && replyHTML) {
+        const replyWrapper = document.createElement('div');
+        // 跟随当前消息靠左或靠右对齐
+        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
+        // 让它和气泡有一点距离感
+        replyWrapper.style.marginTop = '2px';
+        replyWrapper.innerHTML = replyHTML;
+        
+        // 将引用块插在气泡的下方同级位置
+        messageDiv.insertAdjacentElement('afterend', replyWrapper);
+    }
 
     let actionsHTML = '';
     if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
