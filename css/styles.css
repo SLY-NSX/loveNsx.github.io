@@ -796,7 +796,6 @@
             justify-content: center;
             gap: 2px;
             min-width: 52px;
-            margin-top: 2px;
         }
 
         .avatar:hover {
@@ -7559,7 +7558,7 @@
         }
         .avatar-container {
     position: relative;
-    width: 45px;
+    width: 56px;
     height: 56px;
     order: 2;
     flex-shrink: 0;
@@ -11085,11 +11084,11 @@ body.with-background .time-separator span {
 /* 3. 名字与状态的字体效果互换，名字颜色随系统变色 (全局) */
 .username {
     color: var(--accent-color) !important; /* 颜色随系统变换 */
-    font-size: 8px !important;            /* 原状态大小 */
+    font-size: 10px !important;            /* 原状态大小 */
     font-weight: 500 !important;           /* 原状态粗细 */
 }
 .status {
-    font-size: 10px !important;          /* 原名字大小 */
+    font-size: 11.5px !important;          /* 原名字大小 */
     font-weight: 600 !important;           /* 原名字粗细，比名字更清晰 */
 }
 
@@ -11098,7 +11097,7 @@ body.with-background .time-separator span {
     /* 第一条：左右向中间提，向上提一点（仅手机端） */
     .header-inner {
         padding: 2px 8px 0px !important; /* 上下变薄，左右往里收 */
-        max-width: 400px !important;     /* 强制收窄，让两侧向中间靠 */
+        max-width: 420px !important;     /* 强制收窄，让两侧向中间靠 */
     }
     
     /* 第三条：单独把格言往上拉，破坏同一水平也可以 */
@@ -11121,7 +11120,7 @@ body.with-background .time-separator span {
     
     /* 字体相关 */
     font-family: 'Ma Shan Zheng', cursive !important; /* 花字字体 */
-    font-size: 12px !important; /* 因为是花字，稍微放大一点更好看 (原14px) */
+    font-size: 14px !important; /* 因为是花字，稍微放大一点更好看 (原14px) */
     font-weight: normal !important; /* 这个字体自带加粗感，不需要额外加粗 */
     letter-spacing: 4px !important; /* 花字通常字间距拉开一点更有味道 */
     opacity: 0.85 !important; /* 稍微降低一点透明度，防止花字太抢眼 */
