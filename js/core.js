@@ -1236,14 +1236,17 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         const isMyMessage = msg.sender === 'user'; 
         
         const barColor = 'var(--accent-color, #aaa)';
+        
+        // 修复1&2：去掉 margin:auto，只用 padding 控制间距，竖线高度将完美贴合文字高度，无多余空隙
         let borderStyle = isMyMessage 
-            ? `border-right: 2px solid ${barColor}; padding-right: 6px; margin-left: auto;` 
-            : `border-left: 2px solid ${barColor}; padding-left: 6px; margin-right: auto;`;
+            ? `border-right: 2px solid ${barColor}; padding-right: 8px;` 
+            : `border-left: 2px solid ${barColor}; padding-left: 8px;`;
 
         replyHTML = `
         <div class="custom-reply-card-outside" 
              data-reply-id="${msg.replyTo.id || ''}" 
-             style="cursor: pointer; max-width: 75vw; margin-top: 4px; ${borderStyle} display: inline-block;">
+             onclick="window.scrollToQuotedMessage(this)"
+             style="cursor: pointer; max-width: 80vw; margin-top: 4px; display: inline-block; ${borderStyle}">
             <div style="color: #888; font-size: calc(var(--font-size, 16px) - 2px); white-space: pre-wrap; word-break: break-all; line-height: 1.4; text-align: left;">
                 <span style="font-weight: 500;">${repliedSender}：</span><span>${repliedText}</span>
             </div>
