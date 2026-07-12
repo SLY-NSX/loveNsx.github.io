@@ -1099,50 +1099,31 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         // 通话气泡不显示对方名字（即便是开启状态）
         // 也不显示时间戳/meta 等
 
-        const messageDiv = document.createElement('div');
-        // 👉 修改：在 call-bubble-message 后面加上 ${settings.bubbleStyle}
-        messageDiv.className = `message call-bubble-message ${settings.bubbleStyle} message-${msg.sender === 'user' ? 'sent' : 'received'}`;
-        if (msg.callOptions && msg.callOptions.length > 0) {
-            messageDiv.classList.add('call-bubble-interactive');
-        }
+    const messageDiv = document.createElement('div');
+    if (isImageOnly) {
+        messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} message-image-bubble-none`;
+    } else {
+        messageDiv.className = `message message-${msg.sender === 'user' ? 'sent' : 'received'} ${settings.bubbleStyle}`;
+    }
+    messageDiv.innerHTML = messageHTML;
+
+    // --- 新增：如果有被引用消息，组装成一个跟随气泡的 div ---
+    let replyWrapper = null;
+    if (typeof replyHTML !== 'undefined' && replyHTML) {
+        replyWrapper = document.createElement('div');
+        replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
+        replyWrapper.style.marginTop = '4px'; // 和气泡保持一点距离
+        replyWrapper.style.padding = '0 4px'; // 稍微靠边一点对齐
+        replyWrapper.innerHTML = replyHTML;
+    }
+
+    // 1. 先把气泡放进去
+    contentWrapper.appendChild(messageDiv);
     
-        const callIcon = msg.callIcon || 'fa-phone';
-        const callText = msg.text || '';
-        messageDiv.innerHTML = 
-            '<div class="call-bubble-inner">' +
-                '<i class="fas ' + callIcon + ' call-bubble-icon"></i>' +
-                '<span class="call-bubble-text">' + callText + '</span>' +
-            '</div>';
-
-        // 仅 partner 气泡且带 options 时才可点击弹菜单
-        if (msg.callOptions && msg.callOptions.length > 0) {
-            (function(opts) {
-                messageDiv.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (typeof window.showCallBubbleMenu === 'function') {
-                        window.showCallBubbleMenu(opts, messageDiv);
-                    }
-                });
-                messageDiv.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                });
-            })(msg.callOptions);
-            messageDiv.style.userSelect = 'none';
-            messageDiv.style.webkitUserSelect = 'none';
-        } else {
-            // 完全无互动：屏蔽点击和长按
-            messageDiv.style.userSelect = 'none';
-            messageDiv.style.webkitUserSelect = 'none';
-            messageDiv.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            });
-        }
-
-        contentWrapper.appendChild(messageDiv);
+    // 2. 如果有引用块，紧跟着气泡放进去（它俩成为兄弟节点，引用块没有气泡背景，就脱离视觉气泡了）
+    if (replyWrapper) {
+        contentWrapper.appendChild(replyWrapper);
+    }
         wrapper.appendChild(contentWrapper);
         fragment.appendChild(wrapper);
 
