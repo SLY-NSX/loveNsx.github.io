@@ -11063,25 +11063,47 @@ body.with-background .time-separator span {
     -webkit-backdrop-filter: blur(4px);
 }
 
-/* === 顶部栏排版定制（不改变元素大小） === */
+/* === 顶部栏排版新定制 === */
 
-/* 确保顶部栏内部为垂直排列，方便控制上下 */
+/* 1. 整体布局：格言下移，去留白，上提对齐状态 (PC和手机端通用) */
 .header {
     flex-direction: column;
 }
-
-/* 1 & 4：整体变薄，左右向中间提 */
-.header-inner {
-    order: 1; /* 将用户区和按键区置于上方 */
-    padding: 4px 14px 0px !important; /* 上下变薄(4px和0px)，左右往中间收(14px) */
-    max-width: 500px !important; /* 稍微收窄整体宽度，强制左右向中间靠拢 (原来是560px) */
-    gap: 6px !important; /* 左右区块之间的间距 */
+.header-motto {
+    order: 2;
+    padding: 0px 24px !important;
+    margin-top: -6px !important; /* 👈 控制格言和状态水平对齐，若没对齐改这个 */
+    margin-bottom: 6px !important;
 }
 
-/* 2 & 3：格言下移并收紧，与状态水平对齐 */
+/* 2. 格言字体调大 (全局) */
 .header-motto {
-    order: 2; /* 将格言置于下方 */
-    padding: 0px 24px !important; /* 去掉原有的上下 8px 留白，让顶部栏更薄 */
-    margin-top: -6px !important; /* 关键：向上提一点，去对齐 status 的水平线 */
-    margin-bottom: 6px !important; /* 底部留一点呼吸空间，防止贴住聊天区 */
+    font-size: 14px !important; /* 原默认12px，调大到14px */
+}
+
+/* 3. 名字与状态的字体效果互换，名字颜色随系统变色 (全局) */
+.username {
+    color: var(--accent-color) !important; /* 颜色随系统变换 */
+    font-size: 10px !important;            /* 原状态大小 */
+    font-weight: 500 !important;           /* 原状态粗细 */
+}
+.status {
+    font-size: 11.5px !important;          /* 原名字大小 */
+    font-weight: 600 !important;           /* 原名字粗细，比名字更清晰 */
+}
+
+/* 4. 手机端单独调整 */
+@media (max-width: 768px) {
+    /* 第一条：左右向中间提，向上提一点（仅手机端） */
+    .header-inner {
+        padding: 2px 8px 0px !important; /* 上下变薄，左右往里收 */
+        max-width: 420px !important;     /* 强制收窄，让两侧向中间靠 */
+    }
+    
+    /* 第三条：单独把格言往上拉，破坏同一水平也可以 */
+    .header-motto {
+        margin-top: -14px !important; /* 👈 从 -6px 改为 -14px，手机端单独拉高 */
+        margin-bottom: 8px !important;
+        font-size: 11px !important;   /* 手机端原9px/8px，这里调大到11px保证可见 */
+    }
 }
