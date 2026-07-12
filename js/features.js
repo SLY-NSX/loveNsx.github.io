@@ -563,8 +563,12 @@ window.renderComboContent = function(tabName) {
 
                 if (tab === 'poke') {
                     showPokeTab(contentArea);
+                } else if (tab === 'emoji') {
+                    // 👈 专门处理纯 emoji
+                    showEmojiTab(contentArea, false, 'emoji');
                 } else {
-                    showEmojiTab(contentArea, tab === 'partner-sticker');
+                    // 👈 专门处理表情库 (my-sticker / partner-sticker)
+                    showEmojiTab(contentArea, tab === 'partner-sticker', 'sticker');
                 }
             });
         });
@@ -576,74 +580,81 @@ window.renderComboContent = function(tabName) {
     if (targetBtn) targetBtn.click();
 };
 
-function showEmojiTab(area, isPartner) {
+// 新增第三个参数 mode：'emoji' 只显emoji，'sticker' 只显表情包
+function showEmojiTab(area, isPartner, mode = 'all') {
     area.innerHTML = '';
     area.style.display = 'grid';
     area.style.gridTemplateColumns = 'repeat(5, 1fr)';
     area.style.gap = '8px';
     
-    CONSTANTS.REPLY_EMOJIS.forEach(emoji => {
-        const item = document.createElement('div');
-        item.className = 'picker-item';
-        item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
-        item.onclick = () => {
-            const input = document.getElementById('message-input');
-            input.value += emoji;
-            document.getElementById('user-sticker-picker').classList.remove('active');
-            input.focus();
-        };
-        area.appendChild(item);
-    });
+    // 1. 渲染 Emoji (只有在 mode 为 'emoji' 或 'all' 时才显示)
+    if (mode === 'emoji' || mode === 'all') {
+        CONSTANTS.REPLY_EMOJIS.forEach(emoji => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
+            item.onclick = () => {
+                const input = document.getElementById('message-input');
+                input.value += emoji;
+                document.getElementById('user-sticker-picker').classList.remove('active');
+                input.focus();
+            };
+            area.appendChild(item);
+        });
 
-    const emojis = customEmojis || [];
-    emojis.forEach(emoji => {
-        const item = document.createElement('div');
-        item.className = 'picker-item';
-        item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
-        item.onclick = () => {
-            const input = document.getElementById('message-input');
-            input.value += emoji;
-            document.getElementById('user-sticker-picker').classList.remove('active');
-            input.focus();
-        };
-        area.appendChild(item);
-    });
+        const emojis = customEmojis || [];
+        emojis.forEach(emoji => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `<span style="font-size:24px;">${emoji}</span>`;
+            item.onclick = () => {
+                const input = document.getElementById('message-input');
+                input.value += emoji;
+                document.getElementById('user-sticker-picker').classList.remove('active');
+                input.focus();
+            };
+            area.appendChild(item);
+        });
+    }
 
-    const stickers = isPartner ? (window.partnerStickerLibrary || []) : (myStickerLibrary || []);
-    stickers.forEach(src => {
-        const item = document.createElement('div');
-        item.className = 'picker-item';
-        item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
-        item.onclick = () => {
-            if (isBatchMode && !isPartner) {
-                batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
-                updateBatchPreview();
-                showNotification('已添加到批量发送', 'success', 1200);
-            } else {
-                addMessage({
-                    id: Date.now(),
-                    sender: isPartner ? (settings.partnerName || '对方') : 'user',
-                    text: '',
-                    timestamp: new Date(),
-                    image: src,
-                    status: isPartner ? 'received' : 'sent',
-                    type: 'normal'
-                });
-                playSound('send');
-                
-                if (!isPartner) {
-                    const delayRange = settings.replyDelayMax - settings.replyDelayMin;
-                    const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
-                    if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
-                    window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
+    // 2. 渲染 表情包 (只有在 mode 为 'sticker' 或 'all' 时才显示)
+    if (mode === 'sticker' || mode === 'all') {
+        // 注意：这里把 myStickerLibrary 改成了 window.stickerLibrary，和你之前上传的代码对应
+        const stickers = isPartner ? (window.partnerStickerLibrary || []) : (window.stickerLibrary || myStickerLibrary || []);
+        stickers.forEach(src => {
+            const item = document.createElement('div');
+            item.className = 'picker-item';
+            item.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">`;
+            item.onclick = () => {
+                if (isBatchMode && !isPartner) {
+                    batchMessages.push({ id: Date.now() + batchMessages.length, text: '', image: src });
+                    updateBatchPreview();
+                    showNotification('已添加到批量发送', 'success', 1200);
+                } else {
+                    addMessage({
+                        id: Date.now(),
+                        sender: isPartner ? (settings.partnerName || '对方') : 'user',
+                        text: '',
+                        timestamp: new Date(),
+                        image: src,
+                        status: isPartner ? 'received' : 'sent',
+                        type: 'normal'
+                    });
+                    playSound('send');
+                    
+                    if (!isPartner) {
+                        const delayRange = settings.replyDelayMax - settings.replyDelayMin;
+                        const randomDelay = settings.replyDelayMin + Math.random() * delayRange;
+                        if (window._pendingReplyTimer) clearTimeout(window._pendingReplyTimer);
+                        window._pendingReplyTimer = setTimeout(() => { window._pendingReplyTimer = null; window.requestSimulateTask(false); }, randomDelay);
+                    }
                 }
-            }
-            document.getElementById('user-sticker-picker').classList.remove('active');
-        };
-        area.appendChild(item);
-    });
+                document.getElementById('user-sticker-picker').classList.remove('active');
+            };
+            area.appendChild(item);
+        });
+    }
 }
-
 function showPokeTab(area) {
     area.innerHTML = '';
     area.style.display = 'flex';
