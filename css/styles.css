@@ -11124,7 +11124,7 @@ body.with-background .time-separator span {
 
     /* (3) 顶部栏按键大小，排列高度，间距 */
     .header-actions {
-        gap: 4px !important;          /* 按键之间的间距 */
+        gap: 2px !important;          /* 按键之间的间距 */
         align-items: center !important; /* 排列高度对齐方式 */
         margin-top: 0px !important;   /* 增加 px 往下移，负值往上移 */
     }
@@ -11138,7 +11138,7 @@ body.with-background .time-separator span {
     .header-motto {
         font-size: 10px !important;   /* 手机端格言字体大小 */
         margin-top: -7px !important;  /* 放置高度：负值往上拉，正值往下放 */
-        margin-bottom: 6px !important;/* 与底部/上排按键的间距 */
+        margin-bottom: 4px !important;/* 与底部/上排按键的间距 */
         padding: 0 15px !important;
         letter-spacing: 3px !important;
     }
