@@ -2288,6 +2288,23 @@ function initReplyLibraryListeners() {
             const file = e.target.files[0];
             if (!file) return;
             e.target.value = '';
+
+            // 🛡️ 终极拦截：如果用户传的是图片，自动走表情包上传逻辑！
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    if (typeof stickerLibrary !== 'undefined') {
+                        stickerLibrary.push(ev.target.result);
+                        throttledSaveData();
+                        renderReplyLibrary();
+                        showNotification('✓ 图片已添加到表情库', 'success');
+                    }
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            // 下面是原本处理 JSON 文本的逻辑
             if (file.size > 50 * 1024 * 1024) { showNotification('文件过大', 'error'); return; }
             const reader = new FileReader();
             reader.onload = ev => {
@@ -2295,7 +2312,7 @@ function initReplyLibraryListeners() {
                 try {
                     data = _parseFlexibleJSON(ev.target.result);
                 } catch {
-                    showNotification('文件解析失败，请检查文件格式', 'error');
+                    showNotification('文件解析失败，请检查文件格式（请上传JSON或图片）', 'error');
                     return;
                 }
                 data = _normalizeImportData(data);
