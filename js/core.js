@@ -1229,7 +1229,7 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     if (msg.image) content += `<img src="${msg.image}" class="message-image${isImageOnly ? ' message-image-only' : ''}" alt="图片" style="max-width:${isImageOnly ? '100px' : '100px'}; border-radius: 12px;${!isImageOnly ? ' margin-top: 6px;' : ''} cursor: pointer;" onclick="viewImage('${msg.image}')">`;
     messageHTML += content;
 
-    // 2. 再生成被引用消息（存入 replyHTML，稍后脱离气泡）
+    // 2. 再生成被引用消息（压缩为单行，消除一切换行空白符造成的对齐Bug）
     if (msg.replyTo) {
         const repliedText = msg.replyTo.text || (msg.replyTo.image ? '🖼 图片' : '[消息]');
         const repliedSender = msg.replyTo.sender === 'user' ? (settings.myName || '我') : (settings.partnerName || '对方');
@@ -1237,20 +1237,12 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         
         const barColor = 'var(--accent-color, #aaa)';
         
-        // 修复1&2：去掉 margin:auto，只用 padding 控制间距，竖线高度将完美贴合文字高度，无多余空隙
+        // 上下 padding 设为 0，去掉 margin-top，让竖线高度仅由文字行高决定
         let borderStyle = isMyMessage 
-            ? `border-right: 2px solid ${barColor}; padding-right: 8px;` 
-            : `border-left: 2px solid ${barColor}; padding-left: 8px;`;
+            ? `border-right:2px solid ${barColor};padding:0 8px 0 0;` 
+            : `border-left:2px solid ${barColor};padding:0 0 0 8px;`;
 
-        replyHTML = `
-        <div class="custom-reply-card-outside" 
-             data-reply-id="${msg.replyTo.id || ''}" 
-             onclick="window.scrollToQuotedMessage(this)"
-             style="cursor: pointer; max-width: 80vw; margin-top: 4px; display: inline-block; ${borderStyle}">
-            <div style="color: #888; font-size: calc(var(--font-size, 16px) - 2px); white-space: pre-wrap; word-break: break-all; line-height: 1.4; text-align: left;">
-                <span style="font-weight: 500;">${repliedSender}：</span><span>${repliedText}</span>
-            </div>
-        </div>`;
+        replyHTML = `<div class="custom-reply-card-outside" data-reply-id="${msg.replyTo.id || ''}" onclick="window.scrollToQuotedMessage(this)" style="cursor:pointer;max-width:80vw;display:inline-block;${borderStyle}"><div style="color:#888;font-size:calc(var(--font-size, 16px) - 2px);white-space:pre-wrap;word-break:break-all;line-height:1.1;text-align:left;"><span style="font-weight:500;">${repliedSender}：</span><span>${repliedText}</span></div></div>`;
     }
 
     const messageDiv = document.createElement('div');
@@ -1303,11 +1295,11 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
     if (typeof replyHTML !== 'undefined' && replyHTML) {
         const replyWrapper = document.createElement('div');
         replyWrapper.style.textAlign = msg.sender === 'user' ? 'right' : 'left';
-        replyWrapper.style.marginTop = '2px';
+        // 间距放在这里，不污染内部竖线的高度
+        replyWrapper.style.marginTop = '4px'; 
         replyWrapper.innerHTML = replyHTML;
         contentWrapper.appendChild(replyWrapper);
     }
-
     wrapper.appendChild(contentWrapper);
     fragment.appendChild(wrapper);
 
