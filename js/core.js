@@ -1002,14 +1002,23 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
         lastTimeRef.current = null; // 日期变化，重置时间对比基准
     }
 
-    // 判断是否参与时间戳对比：
-    const isValidForTime = !(msg.type === 'system' || msg.type === 'call-event');
+    // 判断是否参与时间戳对比：不再排除 system，让拍一拍也能触发时间戳显示
+    const isValidForTime = msg.type !== 'call-event';
 
-    // 微信风格：间隔超过8分钟在中间显示小灰字时间
+    // 微信风格：间隔超过8分钟，或连续聊天超过50分钟未显示时间，则显示一次
     if (isValidForTime && settings.timeFormat !== 'off') {
         const currentTs = new Date(msg.timestamp).getTime();
         const EIGHT_MINUTES = 8 * 60 * 1000;
-        if (lastTimeRef.current === null || currentTs - lastTimeRef.current >= EIGHT_MINUTES) {
+        const FIFTY_MINUTES = 50 * 60 * 1000; // 新增：50分钟强制刷新阈值
+        
+        // 判断是否需要显示时间戳：
+        // 1. 还没有基准时间
+        // 2. 距离上次"显示时间戳"过去了8分钟以上
+        // 3. 距离上次"显示时间戳"过去了50分钟以上 (防止一直一来一往聊天导致永远不显示)
+        if (lastTimeRef.current === null || 
+            (currentTs - lastTimeRef.current >= EIGHT_MINUTES) || 
+            (currentTs - lastTimeRef.current >= FIFTY_MINUTES)) {
+            
             const timeSeparator = document.createElement('div');
             timeSeparator.className = 'time-separator';
             
@@ -1028,8 +1037,11 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef, lastTimeRef
             timeSeparator.innerHTML = `<span>${timeStr}</span>`;
             fragment.appendChild(timeSeparator);
             lastSenderRef.current = null; // 出现时间分隔符，重置发送者分组
+            
+            // 关键修改：只有真正显示了时间戳时，才更新基准时间！
+            // 这样如果两人每3分钟聊一句，基准不会变，当累计超过8分钟时就会触发，连续聊50分钟也会强制触发
+            lastTimeRef.current = currentTs; 
         }
-        lastTimeRef.current = currentTs; // 更新基准时间为当前消息
     }
 
     if (msg.type === 'system') {
