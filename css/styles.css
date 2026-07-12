@@ -11107,3 +11107,31 @@ body.with-background .time-separator span {
         font-size: 11px !important;   /* 手机端原9px/8px，这里调大到11px保证可见 */
     }
 }
+
+/* === 引入花字网络字体 === */
+@import url('https://fonts.googleapis.cn/css2?family=ZCOOL+QingKe+HuangYou&display=swap');
+
+/* === 格言字体花字定制 (覆盖之前的格言设置) === */
+.header-motto {
+    order: 2;
+    padding: 0px 24px !important;
+    margin-top: -6px !important; 
+    margin-bottom: 6px !important;
+    
+    /* 字体相关 */
+    font-family: 'ZCOOL QingKe HuangYou', cursive !important; /* 花字字体 */
+    font-size: 16px !important; /* 因为是花字，稍微放大一点更好看 (原14px) */
+    font-weight: normal !important; /* 这个字体自带加粗感，不需要额外加粗 */
+    letter-spacing: 4px !important; /* 花字通常字间距拉开一点更有味道 */
+    opacity: 0.85 !important; /* 稍微降低一点透明度，防止花字太抢眼 */
+}
+
+/* 手机端格言字体微调 */
+@media (max-width: 768px) {
+    .header-motto {
+        margin-top: -14px !important; 
+        margin-bottom: 8px !important;
+        font-size: 13px !important; /* 手机端花字稍微缩小 */
+        letter-spacing: 3px !important;
+    }
+}
