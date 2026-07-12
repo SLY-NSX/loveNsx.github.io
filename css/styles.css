@@ -942,7 +942,7 @@
         .message-content-wrapper {
             display: flex;
             flex-direction: column;
-            max-width: 100%;
+            max-width: 75vw;
         }
 
         @keyframes messageAppear {
@@ -972,7 +972,7 @@
         }
 
         .message {
-            padding: 9px 10px;
+            padding: 9px 14px;
             border-radius: var(--radius);
             word-wrap: break-word;
             line-height: var(--message-line-height);
@@ -981,11 +981,8 @@
             position: relative;
             overflow: hidden;
             min-width: 50px;
-            max-width: 70%;
-            width: fit-content;  
+            max-width: 75vw; 
             text-align: left;
-            text-align: justify;
-            text-justify: inter-ideograph;
             font-family: var(--message-font-family);
             font-weight: var(--message-font-weight);
         }
