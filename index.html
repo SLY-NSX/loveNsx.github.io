@@ -2325,7 +2325,7 @@
         if (!callFeatureRow) return;
         if (document.getElementById('call-ban-time-toggle-row')) return;
 
-        // 1. 注入完全自定义的 CSS，彻底接管样式，完美适配主题与昼夜模式
+        // 1. 注入完全自定义的 CSS
         const style = document.createElement('style');
         style.innerHTML = `
             .ban-time-control {
@@ -2386,7 +2386,7 @@
                 left: 0;
                 width: 100%;
                 min-width: 50px;
-                max-height: 144px; /* 限制高度，只显示约6个数字 */
+                max-height: 144px;
                 overflow-y: auto;
                 background: var(--secondary-bg);
                 border: 1px solid var(--border-color);
@@ -2438,7 +2438,7 @@
             if (saved) banSettings = JSON.parse(saved);
         } catch (e) {}
 
-        // 3. 构建 HTML 结构 (4个独立小选择框组合)
+        // 3. 构建 HTML 结构
         let rowsHtml = '';
         for (let i = 0; i < 3; i++) {
             rowsHtml += `
@@ -2550,7 +2550,6 @@
             };
         });
 
-        // 点击页面空白处关闭弹窗
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.ban-select') && !e.target.closest('.ban-opt-list')) {
                 closeAllPopups();
@@ -2559,7 +2558,6 @@
 
         renderSelects();
 
-        // 主开关逻辑
         const mainToggle = document.getElementById('call-ban-time-enabled-toggle');
         const controlPanel = document.getElementById('call-ban-time-control');
         const sliderSpan = document.querySelector('#call-ban-time-toggle-row .notif-toggle-slider');
