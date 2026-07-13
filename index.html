@@ -2321,7 +2321,7 @@
         if (!callFeatureRow) return;
         if (document.getElementById('call-ban-time-toggle-row')) return;
 
-        // 1. 注入完全自定义的 CSS
+        // 1. 注入基础 CSS
         const style = document.createElement('style');
         style.innerHTML = `
             .ban-time-control {
@@ -2356,7 +2356,6 @@
                 line-height: 28px;
                 cursor: pointer;
                 user-select: none;
-                position: relative;
                 font-size: 12px;
                 transition: border-color 0.2s;
                 flex-shrink: 0;
@@ -2376,47 +2375,32 @@
             .ban-sep {
                 margin: 0 4px;
             }
-            .ban-opt-list {
-                position: absolute;
-                bottom: calc(100% + 4px); /* 核心修改：从向下弹出改为向上弹出 */
-                left: 0;
-                width: 100%;
-                min-width: 50px;
-                max-height: 144px;
-                overflow-y: auto;
-                background: var(--secondary-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                box-shadow: 0 -4px 12px rgba(0,0,0,0.15); /* 阴影方向也改为朝上 */
-                z-index: 9999;
-                display: none;
-                padding: 2px 0; /* 整体内边距减小 */
-                -webkit-overflow-scrolling: touch;
+            
+            /* 全局底部弹出层样式 */
+            #global-ban-picker {
+                position: fixed; left: 0; top: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.5); z-index: 99999; 
+                display: none; align-items: flex-end; justify-content: center;
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
             }
-            .ban-opt-list.show { display: block; }
-            .ban-opt-list::-webkit-scrollbar {
-                width: 4px;
+            #ban-picker-sheet {
+                background: var(--secondary-bg); width: 100%; max-width: 480px; max-height: 55vh; 
+                display: flex; flex-direction: column; border-radius: 20px 20px 0 0; 
+                padding: 10px 0 max(10px, env(safe-area-inset-bottom)); 
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.2); 
+                transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
             }
-            .ban-opt-list::-webkit-scrollbar-thumb {
-                background: var(--border-color);
-                border-radius: 2px;
+            .ban-picker-header {
+                text-align: center; font-size: 13px; color: var(--text-secondary); 
+                margin: 4px 0 10px; font-weight: 600; letter-spacing: 1px;
             }
-            .ban-opt-item {
-                padding: 2px 0; /* 核心修改：上下间距从 6px 缩小到 2px，更紧凑 */
-                text-align: center;
-                font-size: 12px;
-                color: var(--text-primary);
-                cursor: pointer;
-                transition: background 0.15s;
+            .ban-picker-options { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+            .ban-picker-item {
+                padding: 14px 20px; text-align: center; font-size: 16px; color: var(--text-primary); 
+                cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.15s;
             }
-            .ban-opt-item:hover {
-                background: rgba(var(--accent-color-rgb), 0.1);
-            }
-            .ban-opt-item.active {
-                background: var(--accent-color);
-                color: var(--message-sent-text);
-                font-weight: bold;
-            }
+            .ban-picker-item:active { background: var(--primary-bg); }
         `;
         document.head.appendChild(style);
 
@@ -2440,13 +2424,13 @@
             rowsHtml += `
             <div class="ban-row" data-row="${i}">
                 <span class="ban-index">${i+1}.</span>
-                <div class="ban-select" data-row="${i}" data-type="startH"><span class="ban-text">无</span><div class="ban-opt-list"></div></div>
+                <div class="ban-select" data-row="${i}" data-type="startH"><span class="ban-text">无</span></div>
                 <span class="ban-colon">:</span>
-                <div class="ban-select" data-row="${i}" data-type="startM"><span class="ban-text">--</span><div class="ban-opt-list"></div></div>
+                <div class="ban-select" data-row="${i}" data-type="startM"><span class="ban-text">--</span></div>
                 <span class="ban-sep">~</span>
-                <div class="ban-select" data-row="${i}" data-type="endH"><span class="ban-text">无</span><div class="ban-opt-list"></div></div>
+                <div class="ban-select" data-row="${i}" data-type="endH"><span class="ban-text">无</span></div>
                 <span class="ban-colon">:</span>
-                <div class="ban-select" data-row="${i}" data-type="endM"><span class="ban-text">--</span><div class="ban-opt-list"></div></div>
+                <div class="ban-select" data-row="${i}" data-type="endM"><span class="ban-text">--</span></div>
             </div>`;
         }
 
@@ -2465,7 +2449,29 @@
         </div>`;
         callFeatureRow.insertAdjacentHTML('afterend', injectHTML);
 
-        // 4. JS 逻辑
+        // 4. 生成全局底部弹窗组件
+        function createGlobalPicker() {
+            let popup = document.getElementById('global-ban-picker');
+            if (!popup) {
+                popup = document.createElement('div');
+                popup.id = 'global-ban-picker';
+                popup.innerHTML = `
+                    <div id="ban-picker-sheet">
+                        <div class="ban-picker-header">请选择时间</div>
+                        <div class="ban-picker-options" id="ban-picker-options"></div>
+                    </div>
+                `;
+                document.body.appendChild(popup);
+                
+                popup.addEventListener('click', (e) => {
+                    if (e.target === popup) hideGlobalPicker();
+                });
+            }
+            return popup;
+        }
+        createGlobalPicker();
+
+        // 5. 核心交互逻辑
         function padZero(n) { return String(n).padStart(2, '0'); }
 
         function renderSelects() {
@@ -2475,85 +2481,94 @@
                 const isHour = type.includes('H');
                 const val = banSettings.times[row][type];
                 
-                const list = el.querySelector('.ban-opt-list');
-                list.innerHTML = '';
-                
                 if (isHour) {
                     el.querySelector('.ban-text').textContent = val === -1 ? '无' : padZero(val);
-                    
-                    const divNone = document.createElement('div');
-                    divNone.className = 'ban-opt-item' + (val === -1 ? ' active' : '');
-                    divNone.textContent = '无';
-                    divNone.onclick = (e) => { e.stopPropagation(); selectOption(row, type, -1); };
-                    list.appendChild(divNone);
-                    
-                    for(let h=0; h<24; h++) {
-                        const item = document.createElement('div');
-                        item.className = 'ban-opt-item' + (val === h ? ' active' : '');
-                        item.textContent = padZero(h);
-                        item.onclick = (e) => { e.stopPropagation(); selectOption(row, type, h); };
-                        list.appendChild(item);
-                    }
                 } else {
                     const hType = type.replace('M', 'H');
                     const hVal = banSettings.times[row][hType];
-                    
                     if (hVal === -1) {
                         el.classList.add('disabled');
                         el.querySelector('.ban-text').textContent = '--';
                     } else {
                         el.classList.remove('disabled');
                         el.querySelector('.ban-text').textContent = padZero(val);
-                        
-                        for(let m=0; m<60; m++) {
-                            const item = document.createElement('div');
-                            item.className = 'ban-opt-item' + (val === m ? ' active' : '');
-                            item.textContent = padZero(m);
-                            item.onclick = (e) => { e.stopPropagation(); selectOption(row, type, m); };
-                            list.appendChild(item);
-                        }
                     }
                 }
             });
         }
 
+        function showGlobalPicker(row, type) {
+            const popup = document.getElementById('global-ban-picker');
+            const optionsContainer = document.getElementById('ban-picker-options');
+            optionsContainer.innerHTML = '';
+
+            const isHour = type.includes('H');
+            const val = banSettings.times[row][type];
+            
+            function createItem(text, value) {
+                const item = document.createElement('div');
+                item.className = 'ban-picker-item';
+                item.textContent = text;
+                if (value === val) {
+                    item.style.color = 'var(--accent-color)';
+                    item.style.fontWeight = 'bold';
+                }
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    selectOption(row, type, value);
+                    hideGlobalPicker();
+                };
+                optionsContainer.appendChild(item);
+            }
+
+            if (isHour) {
+                createItem('无 (不限制)', -1);
+                for(let h=0; h<24; h++) createItem(String(h).padStart(2, '0') + ' 时', h);
+            } else {
+                for(let m=0; m<60; m++) createItem(String(m).padStart(2, '0') + ' 分', m);
+            }
+
+            popup.style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('ban-picker-sheet').style.transform = 'translateY(0)';
+                
+                // 自动滚动到选中项
+                const activeItem = optionsContainer.querySelector('div[style*="bold"]');
+                if (activeItem) {
+                    setTimeout(() => activeItem.scrollIntoView({ behavior: 'auto', block: 'center' }), 50);
+                }
+            }, 10);
+        }
+
+        function hideGlobalPicker() {
+            const popup = document.getElementById('global-ban-picker');
+            if (popup && popup.style.display === 'flex') {
+                document.getElementById('ban-picker-sheet').style.transform = 'translateY(100%)';
+                setTimeout(() => popup.style.display = 'none', 300);
+            }
+        }
+
         function selectOption(row, type, val) {
             banSettings.times[row][type] = val;
             localStorage.setItem('callBanTimeSettings_v3', JSON.stringify(banSettings));
-            closeAllPopups();
             renderSelects();
         }
 
-        function closeAllPopups() {
-            document.querySelectorAll('.ban-opt-list.show').forEach(l => l.classList.remove('show'));
-        }
-
+        // 绑定点击选择框事件
         document.querySelectorAll('.ban-select').forEach(el => {
             el.onclick = (e) => {
                 e.stopPropagation();
-                const list = el.querySelector('.ban-opt-list');
-                const isShown = list.classList.contains('show');
-                closeAllPopups();
-                if (!isShown && !el.classList.contains('disabled')) {
-                    list.classList.add('show');
-                    const active = list.querySelector('.active');
-                    if (active) {
-                        setTimeout(() => {
-                            list.scrollTop = active.offsetTop - 50;
-                        }, 0);
-                    }
+                if (!el.classList.contains('disabled')) {
+                    const row = parseInt(el.dataset.row);
+                    const type = el.dataset.type;
+                    showGlobalPicker(row, type);
                 }
             };
         });
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.ban-select') && !e.target.closest('.ban-opt-list')) {
-                closeAllPopups();
-            }
-        });
-
         renderSelects();
 
+        // 主开关逻辑
         const mainToggle = document.getElementById('call-ban-time-enabled-toggle');
         const controlPanel = document.getElementById('call-ban-time-control');
         const sliderSpan = document.querySelector('#call-ban-time-toggle-row .notif-toggle-slider');
@@ -2565,7 +2580,7 @@
             } else {
                 sliderSpan.style.background = 'var(--border-color)';
                 controlPanel.style.display = 'none';
-                closeAllPopups();
+                hideGlobalPicker();
             }
         }
 
