@@ -2308,6 +2308,11 @@
     <script src="js/onboarding.js"></script> 
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
+<script>
+(function() {
+    window.addEventListener('load', function() {
+        setTimeout(initCallBanFeature, 500);
+    });
 
 <script>
 (function() {
@@ -2320,11 +2325,110 @@
         if (!callFeatureRow) return;
         if (document.getElementById('call-ban-time-toggle-row')) return;
 
-        // 1. 读取本地存储的设置
+        // 1. 注入完全自定义的 CSS，彻底接管样式，完美适配主题与昼夜模式
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .ban-time-control {
+                padding: 10px 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .ban-row {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+            .ban-index {
+                width: 14px;
+                font-weight: bold;
+                color: var(--accent-color);
+                text-align: center;
+                flex-shrink: 0;
+            }
+            .ban-select {
+                width: 42px;
+                height: 30px;
+                padding: 0 4px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--primary-bg);
+                color: var(--text-primary);
+                text-align: center;
+                line-height: 28px;
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+                font-size: 12px;
+                transition: border-color 0.2s;
+                flex-shrink: 0;
+            }
+            .ban-select:hover {
+                border-color: var(--accent-color);
+            }
+            .ban-select.disabled {
+                opacity: 0.4;
+                pointer-events: none;
+            }
+            .ban-colon, .ban-sep {
+                color: var(--text-secondary);
+                font-size: 11px;
+                flex-shrink: 0;
+            }
+            .ban-sep {
+                margin: 0 4px;
+            }
+            .ban-opt-list {
+                position: absolute;
+                top: calc(100% + 4px);
+                left: 0;
+                width: 100%;
+                min-width: 50px;
+                max-height: 144px; /* 限制高度，只显示约6个数字 */
+                overflow-y: auto;
+                background: var(--secondary-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                display: none;
+                padding: 4px 0;
+                -webkit-overflow-scrolling: touch;
+            }
+            .ban-opt-list.show { display: block; }
+            .ban-opt-list::-webkit-scrollbar {
+                width: 4px;
+            }
+            .ban-opt-list::-webkit-scrollbar-thumb {
+                background: var(--border-color);
+                border-radius: 2px;
+            }
+            .ban-opt-item {
+                padding: 6px 0;
+                text-align: center;
+                font-size: 12px;
+                color: var(--text-primary);
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            .ban-opt-item:hover {
+                background: rgba(var(--accent-color-rgb), 0.1);
+            }
+            .ban-opt-item.active {
+                background: var(--accent-color);
+                color: var(--message-sent-text);
+                font-weight: bold;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 2. 读取存储数据
         let banSettings = {
             enabled: false,
             times: [
-                { startH: -1, startM: 0, endH: -1, endM: 0 }, // -1 代表无限制
+                { startH: -1, startM: 0, endH: -1, endM: 0 },
                 { startH: -1, startM: 0, endH: -1, endM: 0 },
                 { startH: -1, startM: 0, endH: -1, endM: 0 }
             ]
@@ -2334,9 +2438,22 @@
             if (saved) banSettings = JSON.parse(saved);
         } catch (e) {}
 
-        // 2. 注入 HTML (原生 Select，绝不占满屏幕)
-        const selectStyle = `flex:1; padding:6px 4px; border:1px solid var(--border-color); border-radius:6px; font-size:12px; background:var(--primary-bg); color:var(--text-primary); outline:none; font-family:var(--font-family); -webkit-appearance:none; appearance:none; text-align:center;`;
-        
+        // 3. 构建 HTML 结构 (4个独立小选择框组合)
+        let rowsHtml = '';
+        for (let i = 0; i < 3; i++) {
+            rowsHtml += `
+            <div class="ban-row" data-row="${i}">
+                <span class="ban-index">${i+1}.</span>
+                <div class="ban-select" data-row="${i}" data-type="startH"><span class="ban-text">无</span><div class="ban-opt-list"></div></div>
+                <span class="ban-colon">:</span>
+                <div class="ban-select" data-row="${i}" data-type="startM"><span class="ban-text">--</span><div class="ban-opt-list"></div></div>
+                <span class="ban-sep">~</span>
+                <div class="ban-select" data-row="${i}" data-type="endH"><span class="ban-text">无</span><div class="ban-opt-list"></div></div>
+                <span class="ban-colon">:</span>
+                <div class="ban-select" data-row="${i}" data-type="endM"><span class="ban-text">--</span><div class="ban-opt-list"></div></div>
+            </div>`;
+        }
+
         const injectHTML = `
         <div class="setting-pill-row" id="call-ban-time-toggle-row" style="border-top:1px solid var(--border-color);">
             <span class="setting-pill-icon"><i class="fas fa-clock" style="color:var(--accent-color);"></i></span>
@@ -2346,77 +2463,103 @@
                 <span class="notif-toggle-slider"></span>
             </label>
         </div>
-        <div id="call-ban-time-control" style="display:none; padding:10px 14px; flex-direction:column; gap:10px;">
-            ${[0,1,2].map(i => `
-                <div style="display:flex; align-items:center; gap:4px;">
-                    <span style="font-size:12px; font-weight:bold; color:var(--accent-color); width:14px;">${i+1}.</span>
-                    <select id="ban-sh-${i}" style="${selectStyle}"></select>
-                    <span style="font-size:11px; color:var(--text-secondary);">:</span>
-                    <select id="ban-sm-${i}" style="${selectStyle}"></select>
-                    <span style="font-size:11px; color:var(--text-secondary); padding:0 2px;">~</span>
-                    <select id="ban-eh-${i}" style="${selectStyle}"></select>
-                    <span style="font-size:11px; color:var(--text-secondary);">:</span>
-                    <select id="ban-em-${i}" style="${selectStyle}"></select>
-                </div>
-            `).join('')}
-            <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;">选"无"代表不设禁止段。支持跨天(如23:00~07:00)。</div>
+        <div id="call-ban-time-control" class="ban-time-control" style="display:none;">
+            ${rowsHtml}
+            <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;margin-top:2px;">选"无"代表不设禁止段。支持跨天(如23:00~07:00)。</div>
         </div>`;
         callFeatureRow.insertAdjacentHTML('afterend', injectHTML);
 
-        // 3. 填充下拉菜单选项
-        for(let i=0; i<3; i++) {
-            const sh = document.getElementById(`ban-sh-${i}`);
-            const sm = document.getElementById(`ban-sm-${i}`);
-            const eh = document.getElementById(`ban-eh-${i}`);
-            const em = document.getElementById(`ban-em-${i}`);
+        // 4. JS 逻辑
+        function padZero(n) { return String(n).padStart(2, '0'); }
 
-            // 填充小时 (00~23 + 无)
-            let hourOptions = '<option value="-1">无</option>';
-            for(let h=0; h<24; h++) {
-                hourOptions += `<option value="${h}">${String(h).padStart(2,'0')}</option>`;
-            }
-            sh.innerHTML = hourOptions;
-            eh.innerHTML = hourOptions;
-
-            // 填充分钟 (00~59)
-            let minOptions = '';
-            for(let m=0; m<60; m++) {
-                minOptions += `<option value="${m}">${String(m).padStart(2,'0')}</option>`;
-            }
-            sm.innerHTML = minOptions;
-            em.innerHTML = minOptions;
-
-            // 回显已保存的设置
-            sh.value = banSettings.times[i].startH;
-            sm.value = banSettings.times[i].startM;
-            eh.value = banSettings.times[i].endH;
-            em.value = banSettings.times[i].endM;
-
-            // 如果小时选了"无"，把分钟禁用，防止选错
-            const toggleMinState = (hEl, mEl) => {
-                mEl.style.opacity = hEl.value === '-1' ? '0.4' : '1';
-                mEl.disabled = hEl.value === '-1';
-            };
-            toggleMinState(sh, sm);
-            toggleMinState(eh, em);
-
-            // 绑定事件保存
-            const saveChange = () => {
-                banSettings.times[i].startH = parseInt(sh.value);
-                banSettings.times[i].startM = parseInt(sm.value);
-                banSettings.times[i].endH = parseInt(eh.value);
-                banSettings.times[i].endM = parseInt(em.value);
-                localStorage.setItem('callBanTimeSettings_v3', JSON.stringify(banSettings));
-                toggleMinState(sh, sm);
-                toggleMinState(eh, em);
-            };
-            sh.onchange = saveChange;
-            sm.onchange = saveChange;
-            eh.onchange = saveChange;
-            em.onchange = saveChange;
+        function renderSelects() {
+            document.querySelectorAll('.ban-select').forEach(el => {
+                const row = parseInt(el.dataset.row);
+                const type = el.dataset.type;
+                const isHour = type.includes('H');
+                const val = banSettings.times[row][type];
+                
+                const list = el.querySelector('.ban-opt-list');
+                list.innerHTML = '';
+                
+                if (isHour) {
+                    el.querySelector('.ban-text').textContent = val === -1 ? '无' : padZero(val);
+                    
+                    const divNone = document.createElement('div');
+                    divNone.className = 'ban-opt-item' + (val === -1 ? ' active' : '');
+                    divNone.textContent = '无';
+                    divNone.onclick = (e) => { e.stopPropagation(); selectOption(row, type, -1); };
+                    list.appendChild(divNone);
+                    
+                    for(let h=0; h<24; h++) {
+                        const item = document.createElement('div');
+                        item.className = 'ban-opt-item' + (val === h ? ' active' : '');
+                        item.textContent = padZero(h);
+                        item.onclick = (e) => { e.stopPropagation(); selectOption(row, type, h); };
+                        list.appendChild(item);
+                    }
+                } else {
+                    const hType = type.replace('M', 'H');
+                    const hVal = banSettings.times[row][hType];
+                    
+                    if (hVal === -1) {
+                        el.classList.add('disabled');
+                        el.querySelector('.ban-text').textContent = '--';
+                    } else {
+                        el.classList.remove('disabled');
+                        el.querySelector('.ban-text').textContent = padZero(val);
+                        
+                        for(let m=0; m<60; m++) {
+                            const item = document.createElement('div');
+                            item.className = 'ban-opt-item' + (val === m ? ' active' : '');
+                            item.textContent = padZero(m);
+                            item.onclick = (e) => { e.stopPropagation(); selectOption(row, type, m); };
+                            list.appendChild(item);
+                        }
+                    }
+                }
+            });
         }
 
-        // 4. 主开关逻辑
+        function selectOption(row, type, val) {
+            banSettings.times[row][type] = val;
+            localStorage.setItem('callBanTimeSettings_v3', JSON.stringify(banSettings));
+            closeAllPopups();
+            renderSelects();
+        }
+
+        function closeAllPopups() {
+            document.querySelectorAll('.ban-opt-list.show').forEach(l => l.classList.remove('show'));
+        }
+
+        document.querySelectorAll('.ban-select').forEach(el => {
+            el.onclick = (e) => {
+                e.stopPropagation();
+                const list = el.querySelector('.ban-opt-list');
+                const isShown = list.classList.contains('show');
+                closeAllPopups();
+                if (!isShown && !el.classList.contains('disabled')) {
+                    list.classList.add('show');
+                    const active = list.querySelector('.active');
+                    if (active) {
+                        setTimeout(() => {
+                            list.scrollTop = active.offsetTop - 50;
+                        }, 0);
+                    }
+                }
+            };
+        });
+
+        // 点击页面空白处关闭弹窗
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.ban-select') && !e.target.closest('.ban-opt-list')) {
+                closeAllPopups();
+            }
+        });
+
+        renderSelects();
+
+        // 主开关逻辑
         const mainToggle = document.getElementById('call-ban-time-enabled-toggle');
         const controlPanel = document.getElementById('call-ban-time-control');
         const sliderSpan = document.querySelector('#call-ban-time-toggle-row .notif-toggle-slider');
@@ -2428,6 +2571,7 @@
             } else {
                 sliderSpan.style.background = 'var(--border-color)';
                 controlPanel.style.display = 'none';
+                closeAllPopups();
             }
         }
 
