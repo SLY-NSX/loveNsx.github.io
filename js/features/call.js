@@ -1156,7 +1156,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     function scheduleRandomCall() {
         clearTimeout(S.randomCallTimer);
         if (!S.enabled) return;
-        const ms =const ms = 2 * 60 * 1000; 
+        const ms = 2 * 60 * 1000; 
         S.randomCallTimer = setTimeout(() => {
             // === 新增：读取禁止时间段设置 ===
             let isBanTime = false;
