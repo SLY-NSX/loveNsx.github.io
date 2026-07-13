@@ -2378,7 +2378,7 @@
             }
             .ban-opt-list {
                 position: absolute;
-                top: calc(100% + 4px);
+                bottom: calc(100% + 4px); /* 核心修改：从向下弹出改为向上弹出 */
                 left: 0;
                 width: 100%;
                 min-width: 50px;
@@ -2387,10 +2387,10 @@
                 background: var(--secondary-bg);
                 border: 1px solid var(--border-color);
                 border-radius: 6px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                box-shadow: 0 -4px 12px rgba(0,0,0,0.15); /* 阴影方向也改为朝上 */
                 z-index: 9999;
                 display: none;
-                padding: 4px 0;
+                padding: 2px 0; /* 整体内边距减小 */
                 -webkit-overflow-scrolling: touch;
             }
             .ban-opt-list.show { display: block; }
@@ -2402,7 +2402,7 @@
                 border-radius: 2px;
             }
             .ban-opt-item {
-                padding: 6px 0;
+                padding: 2px 0; /* 核心修改：上下间距从 6px 缩小到 2px，更紧凑 */
                 text-align: center;
                 font-size: 12px;
                 color: var(--text-primary);
