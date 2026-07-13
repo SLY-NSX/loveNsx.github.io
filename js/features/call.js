@@ -1156,15 +1156,52 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     function scheduleRandomCall() {
         clearTimeout(S.randomCallTimer);
         if (!S.enabled) return;
-        // === 临时测试代码：120秒后 100% 概率来电 ===
-        const ms = 120000; 
+        const ms = (30 + Math.random() * 45) * 60 * 1000; // 30-75分钟
         S.randomCallTimer = setTimeout(() => {
-            if (S.enabled && !S.active) showIncomingCall(); // 100%触发
-            // 测试完毕后，记得把这里改回 scheduleRandomCall(); 
-            // 或者直接把整个函数替换回原来的版本
-            scheduleRandomCall(); 
+            // === 新增：读取禁止时间段设置 ===
+            let isBanTime = false;
+            try {
+                const banStr = localStorage.getItem('callBanTimeSettings_v3');
+                if (banStr) {
+                    const ban = JSON.parse(banStr);
+                    if (ban.enabled && Array.isArray(ban.times)) {
+                        const now = new Date();
+                        const nowMin = now.getHours() * 60 + now.getMinutes();
+                        
+                        for (let i = 0; i < ban.times.length; i++) {
+                            const t = ban.times[i];
+                            // 如果没选时间(设为-1)则跳过该时间段
+                            if (t.startH === -1 || t.endH === -1) continue;
+
+                            const sMin = t.startH * 60 + t.startM;
+                            const eMin = t.endH * 60 + t.endM;
+
+                            if (sMin === eMin) continue; // 起止相同无效
+
+                            if (sMin < eMin) {
+                                // 同一天内，如 16:53 ~ 16:56
+                                if (nowMin >= sMin && nowMin < eMin) {
+                                    isBanTime = true; break;
+                                }
+                            } else {
+                                // 跨天，如 23:00 ~ 07:00
+                                if (nowMin >= sMin || nowMin < eMin) {
+                                    isBanTime = true; break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) { console.error('读取禁止时间失败', e); }
+            // === 判断结束 ===
+
+            // 核心修改：如果不在禁止时间内，才执行原有的概率判定
+            if (!isBanTime) {
+                if (S.enabled && !S.active && Math.random() < 0.25) showIncomingCall();
+            }
+            
+            scheduleRandomCall(); // 继续下一轮循环
         }, ms);
-        // === 临时测试代码结束 ===
     }
 
     function minimizeWindow() {
