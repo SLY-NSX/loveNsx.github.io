@@ -1442,6 +1442,12 @@ const addMessage = (message) => {
         container.scrollTop = container.scrollHeight;
     });
 
+    // ── 【防呆保护】如果 DOM 里消息数量远少于数组，说明有漏画，立即全量重绘 ──
+    const currentDOMCount = container.querySelectorAll('.message-wrapper, .system-message, .call-event-message, .call-bubble-wrapper').length;
+    if (messages.length - currentDOMCount > 3) {
+        renderMessages(false);
+    }
+
     throttledSaveData();
 };
 
@@ -2762,4 +2768,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 10000);
         });
     }
+
+    // ── 【修复】页面切回前台时，强制同步数据与界面 ──
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            // 页面重新可见时，立即用完整数据重绘
+            renderMessages(false);
+            // 滚动到底部，确保看到最新消息
+            if (DOMElements && DOMElements.chatContainer) {
+                DOMElements.chatContainer.scrollTop = DOMElements.chatContainer.scrollHeight;
+            }
+        }
+    });
 });
