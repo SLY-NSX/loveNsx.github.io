@@ -2308,6 +2308,169 @@
     <script src="js/onboarding.js"></script> 
     <script src="js/listeners.js"></script>
     <script src="js/app.js"></script>
+
+<script>
+(function() {
+    // 等待页面和相关 JS 完全加载完毕后再执行
+    window.addEventListener('load', function() {
+        setTimeout(initCallBanFeature, 500);
+    });
+
+    function initCallBanFeature() {
+        const callFeatureRow = document.getElementById('call-feature-toggle-row');
+        // 如果找不到原有的通话行，说明页面结构有变，直接退出防止报错
+        if (!callFeatureRow) return;
+        // 如果已经初始化过，直接退出
+        if (document.getElementById('call-ban-time-toggle-row')) return;
+
+        // 1. 读取本地存储的设置
+        let banSettings = {
+            enabled: false,
+            times: [
+                { start: 'off', end: 'off' },
+                { start: 'off', end: 'off' },
+                { start: 'off', end: 'off' }
+            ]
+        };
+        try {
+            const saved = localStorage.getItem('callBanTimeSettings');
+            if (saved) banSettings = JSON.parse(saved);
+        } catch (e) {}
+
+        // 2. 动态注入 HTML 结构，仿照原版格式
+        const injectHTML = `
+        <div class="setting-pill-row" id="call-ban-time-toggle-row" style="border-top:1px solid var(--border-color);">
+            <span class="setting-pill-icon"><i class="fas fa-clock" style="color:var(--accent-color);"></i></span>
+            <span class="setting-pill-label">通话禁止时间 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">在此期间不发起通话</span></span>
+            <label class="notif-toggle-switch" style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+                <input type="checkbox" id="call-ban-time-enabled-toggle" style="opacity:0;width:0;height:0;">
+                <span class="notif-toggle-slider"></span>
+            </label>
+        </div>
+        <div id="call-ban-time-control" style="display:none; padding:8px 14px; flex-direction:column; gap:8px;">
+            ${[0,1,2].map(i => `
+                <div class="cs-time-range-row" data-index="${i}" style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:12px; color:var(--text-secondary); width:14px;">${i+1}</span>
+                    <select class="cs-ban-time-select" id="call-ban-start-${i}" style="flex:1; padding:7px 6px; border:1px solid var(--border-color); border-radius:8px; font-size:12px; background:var(--primary-bg); color:var(--text-primary); outline:none; font-family:var(--font-family);"></select>
+                    <span style="font-size:12px; color:var(--text-secondary);">~</span>
+                    <select class="cs-ban-time-select" id="call-ban-end-${i}" style="flex:1; padding:7px 6px; border:1px solid var(--border-color); border-radius:8px; font-size:12px; background:var(--primary-bg); color:var(--text-primary); outline:none; font-family:var(--font-family);"></select>
+                </div>
+            `).join('')}
+            <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;margin-top:2px;">留空(无限制)代表不设禁止段。支持跨天(如23:00~07:00)。</div>
+        </div>`;
+        callFeatureRow.insertAdjacentHTML('afterend', injectHTML);
+
+        // 3. 生成下拉菜单的时间选项 (00:00 ~ 23:59)
+        const selectEls = document.querySelectorAll('.cs-ban-time-select');
+        selectEls.forEach(select => {
+            let optionsHTML = '<option value="off">无限制</option>';
+            for(let h=0; h<24; h++) {
+                for(let m=0; m<60; m++) {
+                    const val = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                    optionsHTML += `<option value="${val}">${val}</option>`;
+                }
+            }
+            select.innerHTML = optionsHTML;
+        });
+
+        // 4. 绑定 UI 事件并应用状态
+        const mainToggle = document.getElementById('call-ban-time-enabled-toggle');
+        const controlPanel = document.getElementById('call-ban-time-control');
+        const sliderSpan = document.querySelector('#call-ban-time-toggle-row .notif-toggle-slider');
+
+        function updateToggleUI() {
+            if (mainToggle.checked) {
+                sliderSpan.style.background = 'var(--accent-color)';
+                controlPanel.style.display = 'flex';
+            } else {
+                sliderSpan.style.background = 'var(--border-color)';
+                controlPanel.style.display = 'none';
+            }
+        }
+
+        mainToggle.checked = banSettings.enabled;
+        updateToggleUI();
+
+        mainToggle.addEventListener('change', () => {
+            banSettings.enabled = mainToggle.checked;
+            updateToggleUI();
+            localStorage.setItem('callBanTimeSettings', JSON.stringify(banSettings));
+        });
+
+        for(let i=0; i<3; i++) {
+            const startEl = document.getElementById(`call-ban-start-${i}`);
+            const endEl = document.getElementById(`call-ban-end-${i}`);
+            
+            startEl.value = banSettings.times[i].start || 'off';
+            endEl.value = banSettings.times[i].end || 'off';
+
+            startEl.addEventListener('change', () => {
+                banSettings.times[i].start = startEl.value;
+                localStorage.setItem('callBanTimeSettings', JSON.stringify(banSettings));
+            });
+            endEl.addEventListener('change', () => {
+                banSettings.times[i].end = endEl.value;
+                localStorage.setItem('callBanTimeSettings', JSON.stringify(banSettings));
+            });
+        }
+
+        // 5. 拦截并重写 scheduleRandomCall 逻辑
+        if (typeof scheduleRandomCall === 'function') {
+            window.scheduleRandomCall = function() {
+                clearTimeout(S.randomCallTimer);
+                if (!S.enabled) return;
+                const ms = (30 + Math.random() * 45) * 60 * 1000; // 30-75分钟
+                S.randomCallTimer = setTimeout(() => {
+                    if (S.enabled && !S.active) {
+                        let isBanTime = false;
+                        
+                        // 判断是否在禁止时间内
+                        if (banSettings.enabled) {
+                            const now = new Date();
+                            const nowMin = now.getHours() * 60 + now.getMinutes();
+                            
+                            for (let i = 0; i < banSettings.times.length; i++) {
+                                const t = banSettings.times[i];
+                                if (!t || t.start === 'off' || t.end === 'off') continue;
+
+                                const [sH, sM] = t.start.split(':').map(Number);
+                                const [eH, eM] = t.end.split(':').map(Number);
+                                const sMin = sH * 60 + sM;
+                                const eMin = eH * 60 + eM;
+
+                                if (sMin === eMin) continue; // 时间相同视为无效，跳过
+
+                                if (sMin < eMin) {
+                                    // 同一天内，如 08:00 ~ 11:00
+                                    if (nowMin >= sMin && nowMin < eMin) {
+                                        isBanTime = true; break;
+                                    }
+                                } else {
+                                    // 跨天，如 23:00 ~ 07:00
+                                    if (nowMin >= sMin || nowMin < eMin) {
+                                        isBanTime = true; break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // 核心修改：如果不在禁止时间，才进行概率判定
+                        if (!isBanTime && Math.random() < 0.25) {
+                            showIncomingCall();
+                        }
+                    }
+                    scheduleRandomCall(); // 继续下一轮循环
+                }, ms);
+            };
+            
+            // 重启一次定时器，让新逻辑立即生效
+            if (typeof S !== 'undefined' && S.enabled) {
+                window.scheduleRandomCall();
+            }
+        }
+    }
+})();
+</script>
 </body>
 </html>
     
