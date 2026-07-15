@@ -440,7 +440,7 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
         '#read-receipts-toggle': { prop: 'readReceiptsEnabled', name: '已读回执' },
         '#typing-indicator-toggle': { prop: 'typingIndicatorEnabled', name: '正在输入' },
         '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
-        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情消息' }
+        '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情消息' }, 
         '#vibrate-my-send-toggle': { prop: 'vibrateMySend', name: '我发出的消息震动' },
         '#vibrate-partner-message-toggle': { prop: 'vibratePartnerMessage', name: '对方发来的消息震动' },
         '#vibrate-my-poke-toggle': { prop: 'vibrateMyPoke', name: '我的拍一拍震动' },
@@ -1110,7 +1110,7 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
                 '#typing-indicator-toggle': {
                     prop: 'typingIndicatorEnabled', name: '正在输入'},
                     '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
-                    '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情混入消息' }
+                    '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情混入消息' },
                     // ===== 新增四个震动开关（插在这里） =====
                     '#vibrate-my-send-toggle': { prop: 'vibrateMySend', name: '我发出的消息震动' },
                     '#vibrate-partner-message-toggle': { prop: 'vibratePartnerMessage', name: '对方发来的消息震动' },
