@@ -3224,7 +3224,19 @@ playlist.style.top = (rect.top + (player.classList.contains('collapsed') ? 65 : 
                 }
             });
             DOMElements.batchBtn.addEventListener('click', toggleBatchMode);
-        }
+            // ===== 新增：激活震动权限（用户手势） =====
+            function activateVibrationOnUserGesture() {
+                if (navigator.vibrate) {
+                    navigator.vibrate(1);  // 极短震动激活权限
+                    console.log('[震动] 已通过用户手势激活');
+                }
+                document.removeEventListener('click', activateVibrationOnUserGesture);
+                document.removeEventListener('touchstart', activateVibrationOnUserGesture);
+            }
+            document.addEventListener('click', activateVibrationOnUserGesture, { once: true });
+            document.addEventListener('touchstart', activateVibrationOnUserGesture, { once: true });
+        }   
+
 
 
 

@@ -176,16 +176,31 @@ function deduplicateContentArray(arr, baseSystemArray = []) {
                 })();
 
                 if (presetId === 'mute') return;
-                // ===== 新增：震动判断（插在这里） =====
+                // ===== 震动判断（修改后） =====
                 const vibrateMap = {
                     my_send: settings.vibrateMySend,
                     partner_message: settings.vibratePartnerMessage,
                     my_poke: settings.vibrateMyPoke,
                     partner_poke: settings.vibratePartnerPoke
                 };
+
                 if (category && vibrateMap[category] && navigator.vibrate) {
-                    navigator.vibrate(200);
+                    try {
+                        // 🔑 关键：先尝试震动，如果被浏览器阻止，会抛出异常或返回 false
+                        const result = navigator.vibrate(200);
+                        // 如果 result 为 false，说明震动被拒绝
+                        if (result === false) {
+                            console.warn('[震动] 被浏览器阻止，尝试在用户手势后重试');
+                            // 标记需要用户手势激活
+                            window._vibratePending = true;
+                        } else {
+                            window._vibratePending = false;
+                        }
+                    } catch (e) {
+                        console.warn('[震动] 异常:', e);
+                    }
                 }
+
 
                 // kakaoTalk 作为"固定预设"，选择它就播放对应音频
                 let resolvedCustomUrl = (presetId === 'kakaotalk') ? KAKAO_TALK_URL : resolvedCustomUrlBase;
