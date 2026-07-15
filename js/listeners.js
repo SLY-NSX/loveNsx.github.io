@@ -441,7 +441,12 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
         '#typing-indicator-toggle': { prop: 'typingIndicatorEnabled', name: '正在输入' },
         '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
         '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情消息' }
+        '#vibrate-my-send-toggle': { prop: 'vibrateMySend', name: '我发出的消息震动' },
+        '#vibrate-partner-message-toggle': { prop: 'vibratePartnerMessage', name: '对方发来的消息震动' },
+        '#vibrate-my-poke-toggle': { prop: 'vibrateMyPoke', name: '我的拍一拍震动' },
+        '#vibrate-partner-poke-toggle': { prop: 'vibratePartnerPoke', name: '对方的拍一拍震动' }
     };
+
     for (const [selector, { prop }] of Object.entries(toggleSyncMap)) {
         const el = document.querySelector(selector);
         const val = prop === 'emojiMixEnabled' ? (settings[prop] !== false) : !!settings[prop];
@@ -1106,6 +1111,11 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
                     prop: 'typingIndicatorEnabled', name: '正在输入'},
                     '#read-no-reply-toggle': { prop: 'allowReadNoReply', name: '已读不回' },
                     '#emoji-mix-toggle': { prop: 'emojiMixEnabled', name: '表情混入消息' }
+                    // ===== 新增四个震动开关（插在这里） =====
+                    '#vibrate-my-send-toggle': { prop: 'vibrateMySend', name: '我发出的消息震动' },
+                    '#vibrate-partner-message-toggle': { prop: 'vibratePartnerMessage', name: '对方发来的消息震动' },
+                    '#vibrate-my-poke-toggle': { prop: 'vibrateMyPoke', name: '我的拍一拍震动' },
+                    '#vibrate-partner-poke-toggle': { prop: 'vibratePartnerPoke', name: '对方的拍一拍震动' }
 };
 
             for (const [selector, {
@@ -1113,6 +1123,9 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
             }] of Object.entries(settingToggles)) {
                 const element = document.querySelector(selector);
                 if (!element) continue;
+                if (settings[prop] === undefined) {
+                    settings[prop] = true;
+                }
 
                 const _initVal = prop === 'emojiMixEnabled' ? (settings[prop] !== false) : !!settings[prop];
                 element.classList.toggle('active', _initVal);

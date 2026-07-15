@@ -176,6 +176,16 @@ function deduplicateContentArray(arr, baseSystemArray = []) {
                 })();
 
                 if (presetId === 'mute') return;
+                // ===== 新增：震动判断（插在这里） =====
+                const vibrateMap = {
+                    my_send: settings.vibrateMySend,
+                    partner_message: settings.vibratePartnerMessage,
+                    my_poke: settings.vibrateMyPoke,
+                    partner_poke: settings.vibratePartnerPoke
+                };
+                if (category && vibrateMap[category] && navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
 
                 // kakaoTalk 作为"固定预设"，选择它就播放对应音频
                 let resolvedCustomUrl = (presetId === 'kakaotalk') ? KAKAO_TALK_URL : resolvedCustomUrlBase;
