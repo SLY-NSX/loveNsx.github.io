@@ -693,6 +693,15 @@ function showPokeTab(area) {
             btn.style.transform = '';
         });
         btn.onclick = () => {
+            let finalPokeText = cleanPokeText;
+            const myName = settings.myName || '我';
+            const partnerName = settings.partnerName || '梦角';
+            
+            if (finalPokeText.includes('+')) {
+                finalPokeText = finalPokeText.replace(/\+/g, partnerName);
+            } else {
+                finalPokeText = finalPokeText + ' ' + partnerName;
+            }
             addMessage({
                 id: Date.now(), 
                 text: _formatPokeText(`${settings.myName} ${cleanPokeText}`), 
