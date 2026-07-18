@@ -177,6 +177,17 @@ if (target.classList.contains('delete-btn')) {
                 if (typeof window._sanitizePokeTextForDisplay === 'function') {
                     pokeText = window._sanitizePokeTextForDisplay(pokeText);
                 }
+                const myName = settings.myName || '我';
+                const partnerName = settings.partnerName || '梦角';
+                if (pokeText.includes('+')) {
+                    pokeText = pokeText.replace(/\+/g, partnerName);
+                } else {
+                    // 如果用户输入的是纯文本没有 +，保持原样（可能用户想自定义完整句子）
+                    // 但为了兼容旧格式，如果文本不包含 + 且不包含对方名字，则追加对方名字
+                   if (!pokeText.includes(partnerName)) {
+                        pokeText = pokeText + ' ' + partnerName;
+                   }
+                }
                 const pokeSaveChecked = document.getElementById('poke-save-to-library');
                 const shouldSaveToLibrary = pokeSaveChecked ? !!pokeSaveChecked.checked : false;
                 addMessage({
