@@ -179,19 +179,22 @@ if (target.classList.contains('delete-btn')) {
                 }
                 const myName = settings.myName || '我';
                 const partnerName = settings.partnerName || '梦角';
-                if (pokeText.includes('+')) {
-                    pokeText = pokeText.replace(/\+/g, partnerName);
+                // 处理 + 占位符（用户发出时 + 替换为对方名字）
+                let finalPokeText = pokeText;
+                if (finalPokeText.includes('+')) {
+                    finalPokeText = finalPokeText.replace(/\+/g, partnerName);
                 } else {
-                    // 如果用户输入的是纯文本没有 +，保持原样（可能用户想自定义完整句子）
-                    // 但为了兼容旧格式，如果文本不包含 + 且不包含对方名字，则追加对方名字
-                   if (!pokeText.includes(partnerName)) {
-                        pokeText = pokeText + ' ' + partnerName;
-                   }
+                    finalPokeText = finalPokeText + ' ' + partnerName;
                 }
+    
                 const pokeSaveChecked = document.getElementById('poke-save-to-library');
                 const shouldSaveToLibrary = pokeSaveChecked ? !!pokeSaveChecked.checked : false;
+    
                 addMessage({
-                    id: Date.now(), text: _formatPokeText(pokeText), timestamp: new Date(), type: 'system'
+                    id: Date.now(), 
+                    text: _formatPokeText(`${myName} ${finalPokeText}`), 
+                    timestamp: new Date(), 
+                    type: 'system'
                 });
                 if (typeof playSound === 'function') playSound('poke');
 
