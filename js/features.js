@@ -704,7 +704,7 @@ function showPokeTab(area) {
             }
             addMessage({
                 id: Date.now(), 
-                text: _formatPokeText(`${settings.myName} ${cleanPokeText}`), 
+                text: _formatPokeText(`${myName} ${finalPokeText}`), 
                 timestamp: new Date(), 
                 type: 'system'
             });
